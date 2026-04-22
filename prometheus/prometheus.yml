@@ -25,4 +25,14 @@ scrape_configs:
   #     - targets: ["my-rails-app.example.com:3000"]
   #       labels:
   #         app: "my-rails-app"
-  #         environment: "production"
+  - job_name: "ara-staging"
+    metrics_path: "/metrics"
+    basic_auth:
+      username: "metrics_admin"
+      password: "CHANGE"
+    static_configs:
+      - targets: ["staging.arariichi.org"]
+        labels:
+          app: "ara-staging"
+          environment: "production"
+    scheme: https #         environment: "production"
