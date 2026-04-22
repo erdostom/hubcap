@@ -1,0 +1,7 @@
+{$GRAFANA_DOMAIN} {
+	reverse_proxy grafana:3000
+}
+
+{$GLITCHTIP_DOMAIN} {
+	reverse_proxy glitchtip-web:8080
+}
