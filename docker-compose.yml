@@ -13,6 +13,7 @@ services:
     environment:
       SIGNOZ_DOMAIN: ${SIGNOZ_DOMAIN:?Set SIGNOZ_DOMAIN in .env}
       GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:?Set GLITCHTIP_DOMAIN in .env}
+      OTEL_DOMAIN: ${OTEL_DOMAIN:?Set OTEL_DOMAIN in .env}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
