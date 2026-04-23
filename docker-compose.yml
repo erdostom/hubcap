@@ -94,6 +94,7 @@ services:
       - ./signoz/clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
       - ./signoz/clickhouse/custom-function.xml:/etc/clickhouse-server/custom-function.xml:ro
       - ./signoz/clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
+      - ./signoz/clickhouse/default-user.xml:/etc/clickhouse-server/users.d/default-user.xml:ro
       - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts/
       - signoz_clickhouse:/var/lib/clickhouse/
     networks:
