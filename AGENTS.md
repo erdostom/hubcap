@@ -14,65 +14,66 @@ A self-hosted monitoring service for deployed Ruby on Rails applications.
 
 ```
 Rails Apps
-  ├── yabeda-prometheus  → Prometheus ──→ Grafana (metrics dashboards + alerts → Slack)
-  ├── structured logs    → Promtail   ──→ Loki    ──→ Grafana (log search)
-  └── sentry-ruby gem   → GlitchTip  (exception tracking + uptime monitoring)
+  ├── opentelemetry-ruby  → SigNoz    (APM: traces, metrics, infra dashboards + alerts)
+  ├── stdout              → FluentBit → SigNoz (logs — automatic, no app changes needed)
+  └── sentry-ruby gem     → GlitchTip (exception tracking + uptime monitoring)
 ```
 
 ## Stack
 
-### Metrics: Prometheus + Grafana + Yabeda
+### APM + Metrics + Logs: SigNoz
 
-- **Prometheus** — time-series metrics collection, scrapes `/metrics` endpoints from Rails apps
-- **Grafana** — dashboards, alerting (Slack/Discord), unified UI for metrics and logs
-- **Yabeda** (Rails side) — Ruby-native metrics instrumentation
-  - `yabeda-prometheus` — exposes metrics endpoint
-  - `yabeda-rails` — request duration, error counts, controller-level metrics
-  - `yabeda-puma` — web server metrics
-  - `yabeda-sidekiq` — background job metrics
+- **SigNoz** — unified observability UI: traces, metrics dashboards, logs, alerting
+- Built on **ClickHouse** for fast, efficient storage
+- Receives data via the **OpenTelemetry** protocol (OTLP) on ports 4317 (gRPC) and 4318 (HTTP)
+- Out-of-box dashboards for p99 latency, error rates, DB query times, Sidekiq job latency — no manual dashboard building required
+- Alerts to Slack/Discord via built-in alert rules
 
-### Log Search: Loki + Promtail
+**Rails side — OpenTelemetry gems:**
+- `opentelemetry-sdk` — core SDK
+- `opentelemetry-exporter-otlp` — sends data to SigNoz
+- `opentelemetry-instrumentation-all` — auto-instruments Rails, ActiveRecord, Sidekiq, Redis, Puma, and 50+ more libraries
 
-- **Loki** — log aggregation, queried via LogQL inside Grafana
-- **Promtail** — ships logs from Rails apps to Loki
-- Rails apps should use structured JSON logging (`lograge` or `semantic_logger`)
+### Log Shipping: FluentBit → SigNoz
+
+- **FluentBit** — lightweight log shipper (~1MB binary), tails all Docker container stdout logs from `/var/lib/docker/containers`
+- Parses Docker's JSON log wrapper, then attempts a second JSON parse of the inner `log` field (picks up structured logs from `lograge` etc.)
+- Sets `service.name` from the container name for attribution in SigNoz
+- Forwards to SigNoz OTel collector via OTLP HTTP — no app changes required
+- Logs appear in SigNoz Logs Explorer, searchable by service, level, and full-text
+- Trace correlation works automatically when the log line contains a `trace_id` (emitted by `opentelemetry-ruby`)
 
 ### Exception Tracking: GlitchTip
 
 - **GlitchTip** — self-hosted, Sentry-compatible exception tracker
 - Rails apps integrate via the standard `sentry-ruby` / `sentry-rails` / `sentry-sidekiq` gems, pointed at the GlitchTip instance
-- Provides: automatic exception grouping/deduplication, occurrence counts, stack trace rendering, issue state management (resolve/ignore/regress), native Slack alerts, uptime monitoring
+- Provides: exception grouping/deduplication, occurrence counts, stack trace rendering, issue state management (resolve/ignore/regress), uptime monitoring, Slack alerts
 
 ### Alerting
 
-- Grafana alert rules for metric-based alerts (error rate spikes, high latency, resource usage) → Slack/Discord
+- SigNoz alert rules for metric-based alerts (error rate spikes, high latency, resource usage) → Slack/Discord
 - GlitchTip for per-exception alerts (new issues, regressions) → Slack
 
 ## Authentication
-
-### Rails `/metrics` endpoint
-
-- Protected with **HTTP Basic Auth** — credentials stored as environment variables in each Rails app
-- Prometheus is configured to send matching credentials when scraping
-- Optionally layer on IP allowlisting or private network for defense in depth
 
 ### Hubcap services
 
 | Service | Auth | Exposure |
 |---|---|---|
 | **Caddy** | TLS termination + reverse proxy, automatic Let's Encrypt certs | Public (ports 80/443) |
-| **Grafana** | Built-in username/password (configurable via env vars), optional OAuth | Behind Caddy (`grafana.example.com`) |
+| **SigNoz** | Built-in username/password (set on first login) | Behind Caddy (`signoz.example.com`) |
 | **GlitchTip** | Built-in email/password, supports multiple users/orgs | Behind Caddy (`glitchtip.example.com`) |
-| **Prometheus** | No built-in auth — not exposed publicly, internal Docker network only | Internal only |
-| **Loki** | No built-in auth — not exposed publicly, internal Docker network only | Internal only |
-| **Promtail** | Runs alongside apps, no external access needed | Internal only |
+| **ClickHouse** | No auth — internal Docker network only | Internal only |
+| **Zookeeper** | No auth — internal Docker network only | Internal only |
+| **OTel Collector** | No auth — accepts OTLP on ports 4317/4318 | Ports open to Rails apps |
+| **FluentBit** | No auth — internal Docker network only | Internal only |
 
-Only Caddy gets public-facing ports (80/443). It reverse-proxies to Grafana and GlitchTip by subdomain with automatic HTTPS. All other services communicate over the internal Docker network.
+Only Caddy gets public-facing ports (80/443). The OTel Collector ports (4317/4318) should be firewalled to only accept connections from your Rails app servers.
 
 ## Deployment
 
 - Docker Compose on a single server (4-8 GB RAM)
-- Kamal is an option if we want the same deploy workflow as the Rails apps
+- SigNoz requires at least 4 GB RAM; 6-8 GB recommended for comfortable operation
 
 ## Project Structure
 
@@ -82,30 +83,115 @@ hubcap/
 ├── docker-compose.yml
 ├── .env.example
 ├── caddy/
-│   └── Caddyfile                   # reverse proxy config (subdomain → service)
-├── prometheus/
-│   └── prometheus.yml              # scrape configs for Rails apps
-├── grafana/
-│   ├── provisioning/
-│   │   ├── datasources/            # auto-configure Prometheus + Loki
-│   │   └── dashboards/             # dashboard provisioning
-│   └── dashboards/
-│       ├── rails-overview.json
-│       └── sidekiq.json
-├── loki/
-│   └── loki-config.yml
-├── promtail/
-│   └── promtail-config.yml
-└── alerting/
-    └── alert-rules.yml             # Grafana alert rules
+│   └── Caddyfile                        # reverse proxy config (subdomain → service)
+└── signoz/
+    ├── otel-collector-config.yaml        # OTel collector pipeline config
+    ├── otel-collector-opamp-config.yaml  # OpAMP management config
+    ├── fluent-bit.conf                   # FluentBit: Docker stdout → SigNoz
+    ├── fluent-bit-parsers.conf           # JSON parsers for Docker + app log formats
+    └── clickhouse/
+        ├── config.xml                    # ClickHouse server config
+        ├── users.xml                     # ClickHouse users/quotas
+        ├── custom-function.xml           # histogram UDF registration
+        └── cluster.xml                   # single-node cluster + ZooKeeper config
 ```
 
 ## Rails App Integration Checklist
 
 Each monitored Rails app needs:
 
-1. **Yabeda gems** — `yabeda-prometheus`, `yabeda-rails`, `yabeda-puma`, `yabeda-sidekiq`
-2. **Structured logging** — `lograge` or `semantic_logger` outputting JSON
-3. **Sentry gems** — `sentry-ruby`, `sentry-rails`, `sentry-sidekiq` with DSN pointed at GlitchTip
-4. **Expose `/metrics`** endpoint for Prometheus scraping
-5. **Log shipping** — Promtail configured to read the app's log output
+### 1. OpenTelemetry gems (APM → SigNoz)
+
+Add to `Gemfile`:
+
+```ruby
+gem 'opentelemetry-sdk'
+gem 'opentelemetry-exporter-otlp'
+gem 'opentelemetry-instrumentation-all'
+```
+
+Create `config/initializers/opentelemetry.rb`:
+
+```ruby
+require 'opentelemetry/sdk'
+require 'opentelemetry/exporter/otlp'
+require 'opentelemetry/instrumentation/all'
+
+OpenTelemetry::SDK.configure do |c|
+  c.use_all({
+    'OpenTelemetry::Instrumentation::ActiveRecord' => {
+      db_statement: :obfuscate,  # include SQL but mask values
+    },
+  })
+end
+```
+
+Set environment variables on the Rails app server:
+
+```bash
+OTEL_SERVICE_NAME=my-rails-app
+OTEL_EXPORTER_OTLP_ENDPOINT=http://<hubcap-server>:4317
+# Use OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf and port 4318 if you prefer HTTP
+```
+
+This automatically instruments:
+- HTTP requests (controller, action, path, status, duration)
+- ActiveRecord queries (SQL, duration, DB name)
+- Sidekiq jobs (job class, queue, duration, retries)
+- Redis commands
+- Puma worker metrics
+- External HTTP calls
+
+### 2. Sentry gems (exceptions + logs → GlitchTip)
+
+Add to `Gemfile`:
+
+```ruby
+gem 'sentry-ruby'
+gem 'sentry-rails'
+gem 'sentry-sidekiq'  # if using Sidekiq
+```
+
+Create `config/initializers/sentry.rb`:
+
+```ruby
+Sentry.init do |config|
+  config.dsn = ENV['SENTRY_DSN']  # GlitchTip project DSN
+
+  # Breadcrumbs from Rails logs
+  config.breadcrumbs_logger = [:active_support_logger]
+
+  # Include request params and user info in events and logs
+  # Set to false if you handle sensitive data and haven't reviewed filtering
+  config.send_default_pii = true
+
+  # Performance tracing — set low in production to reduce overhead
+  config.traces_sample_rate = 0.1
+
+  # Optional: attach request_id to every event/log for cross-tool correlation
+  config.before_send = lambda do |event, _hint|
+    event.tags[:request_id] = Current.request_id if defined?(Current)
+    event
+  end
+end
+```
+
+Point `SENTRY_DSN` at your GlitchTip project DSN (found in GlitchTip project settings).
+
+### 3. Structured logging (optional, improves GlitchTip log quality)
+
+Use `lograge` for concise single-line request logs:
+
+```ruby
+# config/initializers/lograge.rb
+Rails.application.configure do
+  config.lograge.enabled = true
+  config.lograge.formatter = Lograge::Formatters::Json.new
+  config.lograge.custom_options = lambda do |event|
+    {
+      request_id: event.payload[:request_id],
+      user_id:    event.payload[:user_id],
+    }
+  end
+end
+```

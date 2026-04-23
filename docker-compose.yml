@@ -11,80 +11,188 @@ services:
       - "443:443"
       - "443:443/udp"
     environment:
-      GRAFANA_DOMAIN: ${GRAFANA_DOMAIN:?Set GRAFANA_DOMAIN in .env}
+      SIGNOZ_DOMAIN: ${SIGNOZ_DOMAIN:?Set SIGNOZ_DOMAIN in .env}
       GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:?Set GLITCHTIP_DOMAIN in .env}
     volumes:
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
       - caddy_data:/data
       - caddy_config:/config
     depends_on:
-      - grafana
+      - signoz
       - glitchtip-web
     networks:
       - hubcap
 
   # ---------------------------------------------------------------------------
-  # Metrics
+  # APM + metrics + logs — SigNoz (ClickHouse-backed)
   # ---------------------------------------------------------------------------
-  prometheus:
-    image: prom/prometheus:v2.53.0
-    container_name: hubcap-prometheus
-    restart: unless-stopped
-    volumes:
-      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
-      - ./alerting/alert-rules.yml:/etc/prometheus/alert-rules.yml:ro
-      - prometheus_data:/prometheus
+  signoz-init-clickhouse:
+    image: clickhouse/clickhouse-server:25.5.6
+    container_name: hubcap-signoz-init-clickhouse
+    restart: on-failure
     command:
-      - "--config.file=/etc/prometheus/prometheus.yml"
-      - "--storage.tsdb.retention.time=30d"
-      - "--web.enable-lifecycle"
+      - bash
+      - -c
+      - |
+        version="v0.0.1"
+        node_os=$$(uname -s | tr '[:upper:]' '[:lower:]')
+        node_arch=$$(uname -m | sed s/aarch64/arm64/ | sed s/x86_64/amd64/)
+        echo "Fetching histogram-quantile for $${node_os}/$${node_arch}"
+        cd /tmp
+        wget -O histogram-quantile.tar.gz "https://github.com/SigNoz/signoz/releases/download/histogram-quantile%2F$${version}/histogram-quantile_$${node_os}_$${node_arch}.tar.gz"
+        tar -xvzf histogram-quantile.tar.gz
+        mv histogram-quantile /var/lib/clickhouse/user_scripts/histogramQuantile
+    volumes:
+      - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts/
     networks:
       - hubcap
 
-  grafana:
-    image: grafana/grafana:11.1.0
-    container_name: hubcap-grafana
+  signoz-zookeeper:
+    image: signoz/zookeeper:3.7.1
+    container_name: hubcap-signoz-zookeeper
     restart: unless-stopped
     environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
-      GF_AUTH_ANONYMOUS_ENABLED: "false"
-      GF_USERS_ALLOW_SIGN_UP: "false"
-      GF_SERVER_ROOT_URL: https://${GRAFANA_DOMAIN}
+      - ZOO_SERVER_ID=1
+      - ALLOW_ANONYMOUS_LOGIN=yes
+      - ZOO_AUTOPURGE_INTERVAL=1
+      - ZOO_ENABLE_PROMETHEUS_METRICS=yes
+      - ZOO_PROMETHEUS_METRICS_PORT_NUMBER=9141
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - curl -s -m 2 http://localhost:8080/commands/ruok | grep error | grep null
+      interval: 30s
+      timeout: 5s
+      retries: 3
     volumes:
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-      - ./grafana/dashboards:/var/lib/grafana/dashboards:ro
-      - grafana_data:/var/lib/grafana
+      - signoz_zookeeper:/bitnami/zookeeper
+    networks:
+      - hubcap
+
+  signoz-clickhouse:
+    image: clickhouse/clickhouse-server:25.5.6
+    container_name: hubcap-signoz-clickhouse
+    restart: unless-stopped
+    tty: true
     depends_on:
-      - prometheus
-      - loki
+      signoz-init-clickhouse:
+        condition: service_completed_successfully
+      signoz-zookeeper:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "0.0.0.0:8123/ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - ./signoz/clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
+      - ./signoz/clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
+      - ./signoz/clickhouse/custom-function.xml:/etc/clickhouse-server/custom-function.xml:ro
+      - ./signoz/clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
+      - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts/
+      - signoz_clickhouse:/var/lib/clickhouse/
+    networks:
+      - hubcap
+
+  signoz-telemetrystore-migrator:
+    image: signoz/signoz-otel-collector:v0.144.3
+    container_name: hubcap-signoz-telemetrystore-migrator
+    restart: on-failure
+    environment:
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://signoz-clickhouse:9000
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=true
+      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
+    entrypoint: ["/bin/sh"]
+    command:
+      - -c
+      - |
+        /signoz-otel-collector migrate bootstrap &&
+        /signoz-otel-collector migrate sync up &&
+        /signoz-otel-collector migrate async up
+    depends_on:
+      signoz-clickhouse:
+        condition: service_healthy
+    networks:
+      - hubcap
+
+  signoz:
+    image: signoz/signoz:v0.120.0
+    container_name: hubcap-signoz
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"   # UI — only accessible via Caddy reverse proxy
+    environment:
+      - SIGNOZ_ALERTMANAGER_PROVIDER=signoz
+      - SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN=tcp://signoz-clickhouse:9000
+      - SIGNOZ_SQLSTORE_SQLITE_PATH=/var/lib/signoz/signoz.db
+      - SIGNOZ_TOKENIZER_JWT_SECRET=${SIGNOZ_JWT_SECRET:?Set SIGNOZ_JWT_SECRET in .env}
+    volumes:
+      - signoz_sqlite:/var/lib/signoz/
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "localhost:8080/api/v1/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    depends_on:
+      signoz-clickhouse:
+        condition: service_healthy
+      signoz-telemetrystore-migrator:
+        condition: service_completed_successfully
+    networks:
+      - hubcap
+
+  signoz-otel-collector:
+    image: signoz/signoz-otel-collector:v0.144.3
+    container_name: hubcap-signoz-otel-collector
+    restart: unless-stopped
+    entrypoint: ["/bin/sh"]
+    command:
+      - -c
+      - |
+        /signoz-otel-collector migrate sync check &&
+        /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml
+    environment:
+      - OTEL_RESOURCE_ATTRIBUTES=host.name=hubcap,os.type=linux
+      - LOW_CARDINAL_EXCEPTION_GROUPING=false
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN=tcp://signoz-clickhouse:9000
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER=cluster
+      - SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION=true
+      - SIGNOZ_OTEL_COLLECTOR_TIMEOUT=10m
+    ports:
+      - "4317:4317"   # OTLP gRPC — Rails apps send traces/metrics/logs here
+      - "4318:4318"   # OTLP HTTP — alternative for apps that prefer HTTP
+    volumes:
+      - ./signoz/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+      - ./signoz/otel-collector-opamp-config.yaml:/etc/manager-config.yaml:ro
+    depends_on:
+      signoz-clickhouse:
+        condition: service_healthy
+      signoz-telemetrystore-migrator:
+        condition: service_completed_successfully
     networks:
       - hubcap
 
   # ---------------------------------------------------------------------------
-  # Log aggregation
+  # Log shipping — FluentBit tails all Docker container stdout → SigNoz
   # ---------------------------------------------------------------------------
-  loki:
-    image: grafana/loki:3.1.0
-    container_name: hubcap-loki
+  fluent-bit:
+    image: fluent/fluent-bit:3
+    container_name: hubcap-fluent-bit
     restart: unless-stopped
     volumes:
-      - ./loki/loki-config.yml:/etc/loki/local-config.yaml:ro
-      - loki_data:/loki
-    command: -config.file=/etc/loki/local-config.yaml
-    networks:
-      - hubcap
-
-  promtail:
-    image: grafana/promtail:3.1.0
-    container_name: hubcap-promtail
-    restart: unless-stopped
-    volumes:
-      - ./promtail/promtail-config.yml:/etc/promtail/config.yml:ro
-      - /var/log:/var/log:ro
-    command: -config.file=/etc/promtail/config.yml
+      - ./signoz/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./signoz/fluent-bit-parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - fluent_bit_db:/var/log/
     depends_on:
-      - loki
+      - signoz-otel-collector
     networks:
       - hubcap
 
@@ -205,9 +313,11 @@ services:
 volumes:
   caddy_data:
   caddy_config:
-  prometheus_data:
-  grafana_data:
-  loki_data:
+  signoz_clickhouse:
+  signoz_clickhouse_user_scripts:
+  signoz_zookeeper:
+  signoz_sqlite:
+  fluent_bit_db:
   glitchtip_db_data:
 
 networks:

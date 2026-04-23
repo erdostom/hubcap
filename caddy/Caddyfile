@@ -1,5 +1,5 @@
-{$GRAFANA_DOMAIN} {
-	reverse_proxy grafana:3000
+{$SIGNOZ_DOMAIN} {
+	reverse_proxy signoz:8080
 }
 
 {$GLITCHTIP_DOMAIN} {
