@@ -5,3 +5,7 @@
 {$GLITCHTIP_DOMAIN} {
 	reverse_proxy glitchtip-web:8080
 }
+
+{$OTEL_DOMAIN} {
+	reverse_proxy signoz-otel-collector:4318
+}
