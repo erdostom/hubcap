@@ -27,7 +27,7 @@ services:
   # APM + metrics + logs — SigNoz (ClickHouse-backed)
   # ---------------------------------------------------------------------------
   signoz-init-clickhouse:
-    image: clickhouse/clickhouse-server:25.5.6
+    image: clickhouse/clickhouse-server:25.8
     container_name: hubcap-signoz-init-clickhouse
     restart: on-failure
     command:
@@ -70,7 +70,7 @@ services:
       - hubcap
 
   signoz-clickhouse:
-    image: clickhouse/clickhouse-server:25.5.6
+    image: clickhouse/clickhouse-server:25.8
     container_name: hubcap-signoz-clickhouse
     restart: unless-stopped
     tty: true
@@ -182,7 +182,7 @@ services:
   # Log shipping — FluentBit tails all Docker container stdout → SigNoz
   # ---------------------------------------------------------------------------
   fluent-bit:
-    image: fluent/fluent-bit:3
+    image: fluent/fluent-bit:5.0.3
     container_name: hubcap-fluent-bit
     restart: unless-stopped
     volumes:
@@ -304,7 +304,7 @@ services:
       - hubcap
 
   glitchtip-redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     container_name: hubcap-glitchtip-redis
     restart: unless-stopped
     networks:
