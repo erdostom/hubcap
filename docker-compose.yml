@@ -92,7 +92,7 @@ services:
   # Exception tracking — GlitchTip
   # ---------------------------------------------------------------------------
   glitchtip-migrate:
-    image: glitchtip/glitchtip:v4.0
+    image: glitchtip/glitchtip:6
     container_name: hubcap-glitchtip-migrate
     restart: "no"
     command: ./manage.py migrate --noinput
@@ -106,7 +106,7 @@ services:
       - hubcap
 
   glitchtip-web:
-    image: glitchtip/glitchtip:v4.0
+    image: glitchtip/glitchtip:6
     container_name: hubcap-glitchtip-web
     restart: unless-stopped
     command: >
@@ -157,7 +157,7 @@ services:
       - hubcap
 
   glitchtip-worker:
-    image: glitchtip/glitchtip:v4.0
+    image: glitchtip/glitchtip:6
     container_name: hubcap-glitchtip-worker
     restart: unless-stopped
     command: ./bin/run-celery-with-beat.sh
