@@ -15,7 +15,7 @@ A self-hosted monitoring service for deployed Ruby on Rails applications.
 ```
 Rails Apps
   ├── opentelemetry-ruby  → SigNoz    (APM: traces, metrics, infra dashboards + alerts)
-  ├── stdout              → FluentBit → SigNoz (logs — automatic, no app changes needed)
+  ├── stdout              → FluentBit → SigNoz (logs — FluentBit runs on the Rails app host)
   └── sentry-ruby gem     → GlitchTip (exception tracking + uptime monitoring)
 ```
 
@@ -36,12 +36,14 @@ Rails Apps
 
 ### Log Shipping: FluentBit → SigNoz
 
-- **FluentBit** — lightweight log shipper (~1MB binary), tails all Docker container stdout logs from `/var/lib/docker/containers`
+- **FluentBit** — lightweight log shipper (~1MB binary), runs on the **Rails app host** (not in Hubcap)
+- Tails Docker container stdout logs from `/var/lib/docker/containers`
 - Parses Docker's JSON log wrapper, then attempts a second JSON parse of the inner `log` field (picks up structured logs from `lograge` etc.)
 - Sets `service.name` from the container name for attribution in SigNoz
-- Forwards to SigNoz OTel collector via OTLP HTTP — no app changes required
+- Forwards to SigNoz OTel collector via OTLP HTTP on port 4318
 - Logs appear in SigNoz Logs Explorer, searchable by service, level, and full-text
 - Trace correlation works automatically when the log line contains a `trace_id` (emitted by `opentelemetry-ruby`)
+- See [README.md](README.md) for full FluentBit config and setup instructions
 
 ### Exception Tracking: GlitchTip
 
@@ -66,7 +68,7 @@ Rails Apps
 | **ClickHouse** | No auth — internal Docker network only | Internal only |
 | **Zookeeper** | No auth — internal Docker network only | Internal only |
 | **OTel Collector** | No auth — accepts OTLP on ports 4317/4318 | Ports open to Rails apps |
-| **FluentBit** | No auth — internal Docker network only | Internal only |
+| **FluentBit** | No auth — runs on Rails app host, not in Hubcap | Rails app host only |
 
 Only Caddy gets public-facing ports (80/443). The OTel Collector ports (4317/4318) should be firewalled to only accept connections from your Rails app servers.
 
@@ -87,8 +89,6 @@ hubcap/
 └── signoz/
     ├── otel-collector-config.yaml        # OTel collector pipeline config
     ├── otel-collector-opamp-config.yaml  # OpAMP management config
-    ├── fluent-bit.conf                   # FluentBit: Docker stdout → SigNoz
-    ├── fluent-bit-parsers.conf           # JSON parsers for Docker + app log formats
     └── clickhouse/
         ├── config.xml                    # ClickHouse server config
         ├── users.xml                     # ClickHouse users/quotas

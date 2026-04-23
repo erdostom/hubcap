@@ -180,24 +180,6 @@ services:
       - hubcap
 
   # ---------------------------------------------------------------------------
-  # Log shipping — FluentBit tails all Docker container stdout → SigNoz
-  # ---------------------------------------------------------------------------
-  fluent-bit:
-    image: fluent/fluent-bit:5.0.3
-    container_name: hubcap-fluent-bit
-    restart: unless-stopped
-    volumes:
-      - ./signoz/fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
-      - ./signoz/fluent-bit-parsers.conf:/fluent-bit/etc/parsers.conf:ro
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock:ro
-      - fluent_bit_db:/var/log/
-    depends_on:
-      - signoz-otel-collector
-    networks:
-      - hubcap
-
-  # ---------------------------------------------------------------------------
   # Exception tracking — GlitchTip
   # ---------------------------------------------------------------------------
   glitchtip-migrate:
@@ -318,7 +300,6 @@ volumes:
   signoz_clickhouse_user_scripts:
   signoz_zookeeper:
   signoz_sqlite:
-  fluent_bit_db:
   glitchtip_db_data:
 
 networks:

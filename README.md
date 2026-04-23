@@ -2,128 +2,200 @@
 
 A self-hosted monitoring service for deployed Ruby on Rails applications.
 
-See [AGENTS.md](AGENTS.md) for architecture details and project structure.
+See [AGENTS.md](AGENTS.md) for full architecture details and project structure.
 
-## Adding a Rails App to Monitoring
+## Stack
 
-### Rails App Side
+| Service | Purpose |
+|---|---|
+| **SigNoz** | APM: traces, metrics dashboards, logs, alerting |
+| **GlitchTip** | Exception tracking, uptime monitoring |
+| **Caddy** | Reverse proxy with automatic TLS |
 
-#### 1. Add gems
+## Deployment
+
+```bash
+cp .env.example .env
+# fill in .env — at minimum: SIGNOZ_DOMAIN, GLITCHTIP_DOMAIN,
+#   SIGNOZ_JWT_SECRET, GLITCHTIP_SECRET_KEY, GLITCHTIP_DB_PASSWORD
+docker compose up -d
+```
+
+On first start, SigNoz runs its own DB migrations automatically. Visit `https://<SIGNOZ_DOMAIN>` and create your admin account.
+
+Firewall ports 4317 and 4318 to only accept connections from your Rails app servers.
+
+## Adding a Rails App
+
+### 1. OpenTelemetry — APM → SigNoz
 
 ```ruby
 # Gemfile
-
-# Metrics
-gem "yabeda-prometheus"
-gem "yabeda-rails"
-gem "yabeda-puma"
-gem "yabeda-sidekiq"   # if using Sidekiq
-
-# Exception tracking (talks to GlitchTip)
-gem "sentry-ruby"
-gem "sentry-rails"
-gem "sentry-sidekiq"   # if using Sidekiq
-
-# Structured logging
-gem "lograge"          # or semantic_logger
+gem 'opentelemetry-sdk'
+gem 'opentelemetry-exporter-otlp'
+gem 'opentelemetry-instrumentation-all'
 ```
 
-#### 2. Configure Yabeda (metrics)
-
 ```ruby
-# config/initializers/yabeda.rb
-Yabeda.configure do
-  # custom metrics can go here
+# config/initializers/opentelemetry.rb
+require 'opentelemetry/sdk'
+require 'opentelemetry/exporter/otlp'
+require 'opentelemetry/instrumentation/all'
+
+OpenTelemetry::SDK.configure do |c|
+  c.use_all({
+    'OpenTelemetry::Instrumentation::ActiveRecord' => {
+      db_statement: :obfuscate,
+    },
+  })
 end
 ```
 
-Expose the `/metrics` endpoint:
+Set on the Rails app server:
 
-```ruby
-# config/routes.rb
-mount Yabeda::Prometheus::Exporter => "/metrics"
+```bash
+OTEL_SERVICE_NAME=my-rails-app
+OTEL_EXPORTER_OTLP_ENDPOINT=http://<hubcap-server>:4317
 ```
 
-Protect this endpoint with basic auth so only your Prometheus instance can scrape it:
+This auto-instruments HTTP requests, ActiveRecord queries, Sidekiq jobs, Redis, Puma, and external HTTP calls.
+
+### 2. Sentry gems — exceptions → GlitchTip
+
+Create a project in the GlitchTip UI to get a DSN, then:
 
 ```ruby
-# config/initializers/yabeda.rb
-Yabeda::Prometheus::Exporter.use Rack::Auth::Basic do |user, pass|
-  ActiveSupport::SecurityUtils.secure_compare(user, ENV["METRICS_USER"]) &
-  ActiveSupport::SecurityUtils.secure_compare(pass, ENV["METRICS_PASSWORD"])
-end
+# Gemfile
+gem 'sentry-ruby'
+gem 'sentry-rails'
+gem 'sentry-sidekiq'  # if using Sidekiq
 ```
-
-Then set `METRICS_USER` and `METRICS_PASSWORD` environment variables in the Rails app. Use the same credentials in Hubcap's `prometheus/prometheus.yml` scrape config (see step 6).
-
-#### 3. Configure Sentry → GlitchTip (exceptions)
-
-First, create a project in the GlitchTip web UI to get a DSN.
 
 ```ruby
 # config/initializers/sentry.rb
 Sentry.init do |config|
-  config.dsn = "https://key@glitchtip.yourdomain.com/PROJECT_ID"
+  config.dsn = ENV['SENTRY_DSN']
+  config.breadcrumbs_logger = [:active_support_logger]
+  config.send_default_pii = true
   config.traces_sample_rate = 0.1
-  config.breadcrumbs_logger = [:active_support_logger, :http_logger]
 end
 ```
 
-#### 4. Configure structured JSON logging
+Set `SENTRY_DSN` to the GlitchTip project DSN.
+
+### 3. Log shipping — stdout → SigNoz
+
+Logs are shipped by a **FluentBit** agent running on the same host as the Rails app (not on the Hubcap server). FluentBit tails Docker container stdout and forwards to the SigNoz OTel collector via OTLP HTTP.
+
+#### Install FluentBit on the Rails app host
+
+```bash
+curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
+```
+
+Or via Docker — add to the Rails app's `docker-compose.yml`:
+
+```yaml
+fluent-bit:
+  image: fluent/fluent-bit:5.0.3
+  restart: unless-stopped
+  volumes:
+    - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+    - ./fluent-bit-parsers.conf:/fluent-bit/etc/parsers.conf:ro
+    - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    - /var/run/docker.sock:/var/run/docker.sock:ro
+    - fluent_bit_db:/var/log/
+```
+
+#### `fluent-bit.conf`
+
+```ini
+[SERVICE]
+    Flush         5
+    Daemon        Off
+    Log_Level     warn
+    Parsers_File  /fluent-bit/etc/parsers.conf
+
+[INPUT]
+    Name              tail
+    Tag               docker.<container_name>
+    Path              /var/lib/docker/containers/*/*.log
+    Path_Key          filename
+    Parser            docker
+    DB                /var/log/flb_docker.db
+    Mem_Buf_Limit     10MB
+    Skip_Long_Lines   On
+    Refresh_Interval  10
+    Docker_Mode       On
+
+[FILTER]
+    Name         parser
+    Match        docker.*
+    Key_Name     log
+    Parser       json
+    Reserve_Data On
+    Preserve_Key On
+
+[FILTER]
+    Name    modify
+    Match   docker.*
+    Copy    container_name service.name
+
+[OUTPUT]
+    Name                 opentelemetry
+    Match                docker.*
+    Host                 <hubcap-server>
+    Port                 4318
+    Logs_uri             /v1/logs
+    Log_response_payload True
+    Tls                  Off
+    Tls.verify           Off
+```
+
+#### `fluent-bit-parsers.conf`
+
+```ini
+[PARSER]
+    Name        docker
+    Format      json
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%L
+    Time_Keep   On
+
+[PARSER]
+    Name        json
+    Format      json
+    Time_Key    time
+    Time_Format %Y-%m-%dT%H:%M:%S.%L
+    Time_Keep   On
+```
+
+Logs appear in SigNoz Logs Explorer tagged by `service.name` (from container name). Trace correlation works automatically when `trace_id` is present (emitted by `opentelemetry-ruby`).
+
+#### Structured logging (recommended)
+
+Use `lograge` for richer structured fields in logs:
 
 ```ruby
 # config/initializers/lograge.rb
 Rails.application.configure do
   config.lograge.enabled = true
   config.lograge.formatter = Lograge::Formatters::Json.new
+  config.lograge.custom_options = lambda do |event|
+    {
+      request_id: event.payload[:request_id],
+      user_id:    event.payload[:user_id],
+    }
+  end
 end
 ```
 
-#### 5. Ensure logs are accessible to Promtail
+### 4. Create GlitchTip project
 
-Logs need to be written somewhere Promtail can read — either stdout (if containerized) or a log file on disk.
+Log into `https://<GLITCHTIP_DOMAIN>`, create a project, and copy the DSN into `SENTRY_DSN` on the Rails app server.
 
-### Hubcap Side
+### 5. Verify
 
-#### 6. Add Prometheus scrape target
-
-```yaml
-# prometheus/prometheus.yml — add under scrape_configs:
-- job_name: "my-new-rails-app"
-  basic_auth:
-    username: "prometheus"
-    password: "the-same-password-as-METRICS_PASSWORD"
-  static_configs:
-    - targets: ["my-new-rails-app.example.com:3000"]
-  metrics_path: "/metrics"
-```
-
-#### 7. Add Promtail log source
-
-```yaml
-# promtail/promtail-config.yml — add under scrape_configs:
-- job_name: "my-new-rails-app"
-  static_configs:
-    - targets: [localhost]
-      labels:
-        app: "my-new-rails-app"
-        __path__: "/var/log/my-new-rails-app/*.log"
-```
-
-#### 8. Create GlitchTip project
-
-Log into the GlitchTip web UI, create a new project, and copy the DSN into the Rails app's Sentry initializer (step 3).
-
-#### 9. Restart Hubcap services
-
-After updating Prometheus and Promtail configs:
-
-```bash
-docker compose restart prometheus promtail
-```
-
-#### 10. Verify
-
-- Open Grafana and confirm the new app appears in your dashboards
-- Trigger a test exception in the Rails app and confirm it shows up in GlitchTip
-- Check Grafana → Explore → Loki to confirm logs are flowing
+- **SigNoz** → Services — confirm your app appears with traces
+- **SigNoz** → Logs Explorer — filter by `service.name = my-rails-app`
+- **GlitchTip** — trigger a test exception and confirm it appears

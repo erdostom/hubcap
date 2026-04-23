@@ -1,0 +1,46 @@
+From c103b35b9f55f421598a6b8f8b773fe2f3efa064 Mon Sep 17 00:00:00 2001
+From: Tamas <github@tamaserdos.com>
+Date: Thu, 23 Apr 2026 16:01:32 +0000
+Subject: [PATCH 8/8] fix
+
+---
+ docker-compose.yml                 |  1 +
+ signoz/clickhouse/default-user.xml | 15 +++++++++++++++
+ 2 files changed, 16 insertions(+)
+ create mode 100644 signoz/clickhouse/default-user.xml
+
+diff --git a/docker-compose.yml b/docker-compose.yml
+index 2027457..4bc68a7 100644
+--- a/docker-compose.yml
++++ b/docker-compose.yml
+@@ -94,6 +94,7 @@ services:
+       - ./signoz/clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
+       - ./signoz/clickhouse/custom-function.xml:/etc/clickhouse-server/custom-function.xml:ro
+       - ./signoz/clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
++      - ./signoz/clickhouse/default-user.xml:/etc/clickhouse-server/users.d/default-user.xml:ro
+       - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts/
+       - signoz_clickhouse:/var/lib/clickhouse/
+     networks:
+diff --git a/signoz/clickhouse/default-user.xml b/signoz/clickhouse/default-user.xml
+new file mode 100644
+index 0000000..8812ece
+--- /dev/null
++++ b/signoz/clickhouse/default-user.xml
+@@ -0,0 +1,15 @@
++<?xml version="1.0"?>
++<clickhouse>
++    <!-- Override the image-generated users.d/default-user.xml, which locks
++         the default user to loopback only. We allow all networks here so that
++         other containers on the Docker bridge (otel-collector, migrator, etc.)
++         can connect. Access is still restricted to the internal hubcap network
++         via Docker Compose — this port is never exposed publicly. -->
++    <users>
++        <default>
++            <networks>
++                <ip>::/0</ip>
++            </networks>
++        </default>
++    </users>
++</clickhouse>
+--
+2.43.0
