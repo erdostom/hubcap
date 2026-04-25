@@ -39,7 +39,7 @@ Rails Apps
 - **FluentBit** — lightweight log shipper (~1MB binary), runs on the **Rails app host** (not in Hubcap)
 - Tails Docker container stdout logs from `/var/lib/docker/containers`
 - Parses Docker's JSON log wrapper, then attempts a second JSON parse of the inner `log` field (picks up structured logs from `lograge` etc.)
-- Sets `service.name` from the container name for attribution in SigNoz
+- Sets `service.name` from the app's structured JSON log field `service_name` (with container ID fallback) for attribution in SigNoz
 - Forwards to SigNoz OTel collector via OTLP HTTP on port 4318
 - Logs appear in SigNoz Logs Explorer, searchable by service, level, and full-text
 - Trace correlation works automatically when the log line contains a `trace_id` (emitted by `opentelemetry-ruby`)

@@ -96,15 +96,16 @@ curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
 Or via Docker — add to the Rails app's `docker-compose.yml`:
 
 ```yaml
-fluent-bit:
-  image: fluent/fluent-bit:5.0.3
-  restart: unless-stopped
-  volumes:
-    - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
-    - ./fluent-bit-parsers.conf:/fluent-bit/etc/parsers.conf:ro
-    - /var/lib/docker/containers:/var/lib/docker/containers:ro
-    - /var/run/docker.sock:/var/run/docker.sock:ro
-    - fluent_bit_db:/var/log/
+  fluent-bit:
+    image: fluent/fluent-bit:5.0.3
+    restart: unless-stopped
+    volumes:
+      - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
+      - ./fluent-bit-parsers.conf:/fluent-bit/etc/parsers.conf:ro
+      - ./service-name.lua:/fluent-bit/etc/service-name.lua:ro
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - fluent_bit_db:/var/log/
 ```
 
 #### `fluent-bit.conf`
@@ -118,7 +119,7 @@ fluent-bit:
 
 [INPUT]
     Name              tail
-    Tag               docker.<container_name>
+    Tag               docker.<container_id>
     Path              /var/lib/docker/containers/*/*.log
     Path_Key          filename
     Parser            docker
@@ -127,6 +128,7 @@ fluent-bit:
     Skip_Long_Lines   On
     Refresh_Interval  10
     Docker_Mode       On
+    Tag_Regex         (?<container_id>[a-f0-9]{64})-json\.log$
 
 [FILTER]
     Name         parser
@@ -137,9 +139,10 @@ fluent-bit:
     Preserve_Key On
 
 [FILTER]
-    Name    modify
-    Match   docker.*
-    Copy    container_name service.name
+    Name   lua
+    Match  docker.*
+    Script /fluent-bit/etc/service-name.lua
+    Call   set_service_name
 
 [OUTPUT]
     Name                 opentelemetry
@@ -150,6 +153,26 @@ fluent-bit:
     Log_response_payload True
     Tls                  Off
     Tls.verify           Off
+    Logs_body_key        log
+```
+
+#### `service-name.lua`
+
+Save alongside `fluent-bit.conf` and mount it into the FluentBit container:
+
+```lua
+function set_service_name(tag, timestamp, record)
+    -- service_name comes from parsed JSON log (e.g. lograge output)
+    local svc = record["service_name"]
+
+    -- Fallback to container_id extracted from tag: docker.<container_id>
+    if svc == nil or svc == "" then
+        svc = string.gsub(tag, "^docker%.", "")
+    end
+
+    record["service_name"] = svc
+    return 1, timestamp, record
+end
 ```
 
 #### `fluent-bit-parsers.conf`
@@ -170,7 +193,7 @@ fluent-bit:
     Time_Keep   On
 ```
 
-Logs appear in SigNoz Logs Explorer tagged by `service.name` (from container name). Trace correlation works automatically when `trace_id` is present (emitted by `opentelemetry-ruby`).
+Logs appear in SigNoz Logs Explorer tagged by `service.name`. The value is taken from the `service_name` field in your app's structured JSON logs (via `lograge`); if that field is missing it falls back to the Docker container ID. Trace correlation works automatically when `trace_id` is present (emitted by `opentelemetry-ruby`).
 
 #### Structured logging (recommended)
 
@@ -183,8 +206,9 @@ Rails.application.configure do
   config.lograge.formatter = Lograge::Formatters::Json.new
   config.lograge.custom_options = lambda do |event|
     {
-      request_id: event.payload[:request_id],
-      user_id:    event.payload[:user_id],
+      request_id:   event.payload[:request_id],
+      user_id:      event.payload[:user_id],
+      service_name: ENV.fetch("OTEL_SERVICE_NAME", Rails.application.class.module_parent_name.underscore),
     }
   end
 end

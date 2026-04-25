@@ -26,6 +26,14 @@ processors:
   resourcedetection:
     detectors: [env, system]
     timeout: 2s
+  transform/logs:
+    log_statements:
+      - context: log
+        statements:
+          - set(resource.attributes["service.name"], attributes["service_name"]) where attributes["service_name"] != ""
+      - context: resource
+        statements:
+          - set(attributes["service.name"], "unknown") where attributes["service.name"] == ""
   signozspanmetrics/delta:
     metrics_exporter: signozclickhousemetrics
     metrics_flush_interval: 60s
@@ -87,7 +95,7 @@ service:
       exporters: [signozclickhousemetrics, metadataexporter, signozmeter]
     logs:
       receivers: [otlp]
-      processors: [batch]
+      processors: [transform/logs, batch]
       exporters: [clickhouselogsexporter, metadataexporter, signozmeter]
     metrics/meter:
       receivers: [signozmeter]
