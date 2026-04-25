@@ -27,13 +27,21 @@ processors:
     detectors: [env, system]
     timeout: 2s
   transform/logs:
+    operators:
+      - type: trace_parser
+        trace_id:
+          parse_from: attributes.trace_id
+        span_id:
+          parse_from: attributes.span_id
+      - type: remove
+        field: attributes.trace_id
+      - type: remove
+        field: attributes.span_id
     log_statements:
       - context: log
         statements:
-          - set(resource.attributes["service.name"], attributes["service_name"]) where attributes["service_name"] != ""
-      - context: resource
-        statements:
-          - set(attributes["service.name"], "unknown") where attributes["service.name"] == ""
+          - set(resource.attributes["service.name"], attributes["service"]) where attributes["service"] != ""
+          - set(severity_text, attributes["level"]) where attributes["level"] != ""
   signozspanmetrics/delta:
     metrics_exporter: signozclickhousemetrics
     metrics_flush_interval: 60s

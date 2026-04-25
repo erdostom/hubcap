@@ -55,8 +55,11 @@ Set on the Rails app server:
 
 ```bash
 OTEL_SERVICE_NAME=my-rails-app
-OTEL_EXPORTER_OTLP_ENDPOINT=http://<hubcap-server>:4317
+OTEL_EXPORTER_OTLP_ENDPOINT=https://<OTEL_DOMAIN>
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
+
+> **Production recommendation:** Always use HTTPS (`https://<OTEL_DOMAIN>`) with `http/protobuf`. Caddy terminates TLS and proxies to the SigNoz collector on port 4318. For local development or when FluentBit and the collector are on the same Docker network, you can fall back to the direct unencrypted endpoint `http://<hubcap-server>:4318`.
 
 This auto-instruments HTTP requests, ActiveRecord queries, Sidekiq jobs, Redis, Puma, and external HTTP calls.
 
@@ -87,18 +90,25 @@ Set `SENTRY_DSN` to the GlitchTip project DSN.
 
 Logs are shipped by a **FluentBit** agent running on the same host as the Rails app (not on the Hubcap server). FluentBit tails Docker container stdout and forwards to the SigNoz OTel collector via OTLP HTTP.
 
-#### Install FluentBit on the Rails app host
+#### Environment variables
 
-```bash
-curl https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh
-```
+FluentBit needs two environment variables for correct attribution in SigNoz:
 
-Or via Docker — add to the Rails app's `docker-compose.yml`:
+| Variable | Purpose | Example |
+|---|---|---|
+| `OTEL_SERVICE_NAME` | Fallback `service.name` when the log record does not already contain a `service_name` field | `my-rails-app` |
+| `HOST_NAME` | `host.name` resource attribute for every log line | `web-01.example.com` |
+
+When running FluentBit as a Docker container or Kamal accessory, inject them via `env`:
 
 ```yaml
+# docker-compose.yml or Kamal deploy.yml accessory
   fluent-bit:
     image: fluent/fluent-bit:5.0.3
     restart: unless-stopped
+    environment:
+      OTEL_SERVICE_NAME: my-rails-app
+      HOST_NAME: web-01.example.com
     volumes:
       - ./fluent-bit.conf:/fluent-bit/etc/fluent-bit.conf:ro
       - ./fluent-bit-parsers.conf:/fluent-bit/etc/parsers.conf:ro
@@ -147,14 +157,16 @@ Or via Docker — add to the Rails app's `docker-compose.yml`:
 [OUTPUT]
     Name                 opentelemetry
     Match                docker.*
-    Host                 <hubcap-server>
-    Port                 4318
+    Host                 <OTEL_DOMAIN>
+    Port                 443
     Logs_uri             /v1/logs
     Log_response_payload True
-    Tls                  Off
-    Tls.verify           Off
+    Tls                  On
+    Tls.verify           On
     Logs_body_key        log
 ```
+
+> **Production:** Use `Host <OTEL_DOMAIN>` (e.g. `otel.example.com`) with `Tls On` and port `443`. For local development on the same Docker network you can use `Host <hubcap-server>` with `Port 4318`, `Tls Off`, and `Tls.verify Off`.
 
 #### `service-name.lua`
 
@@ -165,12 +177,18 @@ function set_service_name(tag, timestamp, record)
     -- service_name comes from parsed JSON log (e.g. lograge output)
     local svc = record["service_name"]
 
-    -- Fallback to container_id extracted from tag: docker.<container_id>
+    -- Fallback to OTEL_SERVICE_NAME env var
+    if svc == nil or svc == "" then
+        svc = os.getenv("OTEL_SERVICE_NAME")
+    end
+
+    -- Last-resort fallback to container_id extracted from tag: docker.<container_id>
     if svc == nil or svc == "" then
         svc = string.gsub(tag, "^docker%.", "")
     end
 
     record["service_name"] = svc
+    record["hostname"] = os.getenv("HOST_NAME") or "unknown"
     return 1, timestamp, record
 end
 ```
@@ -193,7 +211,7 @@ end
     Time_Keep   On
 ```
 
-Logs appear in SigNoz Logs Explorer tagged by `service.name`. The value is taken from the `service_name` field in your app's structured JSON logs (via `lograge`); if that field is missing it falls back to the Docker container ID. Trace correlation works automatically when `trace_id` is present (emitted by `opentelemetry-ruby`).
+Logs appear in SigNoz Logs Explorer tagged by `service.name`. The value is taken from the `service_name` field in your app's structured JSON logs (via `lograge`); if that field is missing it falls back to `OTEL_SERVICE_NAME` and finally the Docker container ID. Trace correlation works automatically when `trace_id` is present (emitted by `opentelemetry-ruby`).
 
 #### Structured logging (recommended)
 
@@ -209,17 +227,126 @@ Rails.application.configure do
       request_id:   event.payload[:request_id],
       user_id:      event.payload[:user_id],
       service_name: ENV.fetch("OTEL_SERVICE_NAME", Rails.application.class.module_parent_name.underscore),
+      hostname:     ENV.fetch("HOST_NAME", `hostname`.strip),
     }
   end
 end
 ```
 
-### 4. Create GlitchTip project
+### 4. Infrastructure metrics — host + container → SigNoz
+
+In addition to application-level APM traces and logs, you can collect host-level metrics (CPU, memory, disk, network, load) and per-container Docker stats with a second **OpenTelemetry Collector** running on the Rails app host.
+
+#### Environment variables
+
+| Variable | Purpose | Example |
+|---|---|---|
+| `OTEL_SERVICE_NAME` | `service.name` resource attribute on every metric | `my-rails-app` |
+| `HOST_NAME` | `host.name` resource attribute on every metric | `web-01.example.com` |
+
+#### Sample `otel-collector.yml`
+
+```yaml
+receivers:
+  hostmetrics:
+    root_path: /hostfs
+    collection_interval: 30s
+    scrapers:
+      cpu:
+      load:
+      memory:
+      disk:
+      filesystem:
+        exclude_mount_points:
+          mount_points: [/dev/*, /proc/*, /sys/*, /run/*, /var/lib/docker/*]
+          match_type: regexp
+        exclude_fs_types:
+          fs_types: [autofs, binfmt_misc, bpf, cgroup2, configfs, debugfs,
+                     devpts, devtmpfs, fusectl, hugetlbfs, iso9660, mqueue,
+                     nsfs, overlay, proc, procfs, pstore, rpc_pipefs, securityfs,
+                     selinuxfs, squashfs, sysfs, tracefs, tmpfs]
+          match_type: strict
+      network:
+      processes:
+      process:
+        mute_process_name_error: true
+        mute_process_exe_error: true
+        mute_process_io_error: true
+        mute_process_user_error: true
+
+  docker_stats:
+    endpoint: http://my-app-docker-socket-proxy:2375
+    collection_interval: 30s
+    timeout: 10s
+
+processors:
+  resource:
+    attributes:
+      - key: service.name
+        value: ${env:OTEL_SERVICE_NAME}
+        action: upsert
+      - key: host.name
+        value: ${env:HOST_NAME}
+        action: upsert
+
+  resourcedetection:
+    detectors: [env, system]
+    system:
+      hostname_sources: [lookup]
+    timeout: 5s
+    override: false
+
+  batch:
+    timeout: 10s
+
+exporters:
+  otlphttp:
+    endpoint: https://<OTEL_DOMAIN>
+
+service:
+  pipelines:
+    metrics:
+      receivers: [hostmetrics, docker_stats]
+      processors: [resource, resourcedetection, batch]
+      exporters: [otlphttp]
+```
+
+#### Required mounts
+
+- `/:/hostfs:ro,rslave` — host filesystem for `hostmetrics` scrapers
+- `/proc:/hostfs/proc:ro` — process info
+- `/sys:/hostfs/sys:ro` — system info
+- `/etc/hostname:/etc/hostname:ro` — optional, used by `resourcedetection`
+
+#### Docker socket proxy
+
+The `docker_stats` receiver reads from a **read-only** docker-socket proxy (e.g. `tecnativa/docker-socket-proxy`) so the collector never mounts the raw Docker socket. Configure the proxy with `CONTAINERS=1` and `STATS=1` only.
+
+#### Docker Compose / Kamal accessory example
+
+```yaml
+  otel-hostmetrics:
+    image: otel/opentelemetry-collector-contrib:latest
+    environment:
+      OTEL_SERVICE_NAME: my-rails-app
+      HOST_NAME: web-01.example.com
+    volumes:
+      - ./otel-collector.yml:/etc/otel-collector.yml:ro
+      - /:/hostfs:ro,rslave
+      - /proc:/hostfs/proc:ro
+      - /sys:/hostfs/sys:ro
+      - /etc/hostname:/etc/hostname:ro
+    command: "--config=/etc/otel-collector.yml"
+```
+
+Metrics appear in SigNoz under **Services** → `<OTEL_SERVICE_NAME>` and can be used for alert rules (CPU > 80%, memory pressure, disk full, etc.).
+
+### 5. Create GlitchTip project
 
 Log into `https://<GLITCHTIP_DOMAIN>`, create a project, and copy the DSN into `SENTRY_DSN` on the Rails app server.
 
-### 5. Verify
+### 6. Verify
 
-- **SigNoz** → Services — confirm your app appears with traces
+- **SigNoz** → Services — confirm your app appears with traces and infrastructure metrics
 - **SigNoz** → Logs Explorer — filter by `service.name = my-rails-app`
 - **GlitchTip** — trigger a test exception and confirm it appears

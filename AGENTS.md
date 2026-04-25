@@ -14,8 +14,10 @@ A self-hosted monitoring service for deployed Ruby on Rails applications.
 
 ```
 Rails Apps
-  ├── opentelemetry-ruby  → SigNoz    (APM: traces, metrics, infra dashboards + alerts)
+  ├── opentelemetry-ruby  → SigNoz    (APM: traces, infra dashboards + alerts)
   ├── stdout              → FluentBit → SigNoz (logs — FluentBit runs on the Rails app host)
+  ├── hostmetrics + docker_stats
+  │   └── otel-collector-contrib → SigNoz (infrastructure metrics)
   └── sentry-ruby gem     → GlitchTip (exception tracking + uptime monitoring)
 ```
 
@@ -39,11 +41,23 @@ Rails Apps
 - **FluentBit** — lightweight log shipper (~1MB binary), runs on the **Rails app host** (not in Hubcap)
 - Tails Docker container stdout logs from `/var/lib/docker/containers`
 - Parses Docker's JSON log wrapper, then attempts a second JSON parse of the inner `log` field (picks up structured logs from `lograge` etc.)
-- Sets `service.name` from the app's structured JSON log field `service_name` (with container ID fallback) for attribution in SigNoz
-- Forwards to SigNoz OTel collector via OTLP HTTP on port 4318
+- Sets `service.name` from the app's structured JSON log field `service_name`, with `OTEL_SERVICE_NAME` env var fallback, then Docker container ID fallback
+- Sets `host.name` from the `HOST_NAME` env var for every log line
+- Forwards to SigNoz OTel collector via OTLP HTTP on port 443 (TLS) through the Caddy-proxied `OTEL_DOMAIN`, or port 4318 for direct local connections
 - Logs appear in SigNoz Logs Explorer, searchable by service, level, and full-text
 - Trace correlation works automatically when the log line contains a `trace_id` (emitted by `opentelemetry-ruby`)
 - See [README.md](README.md) for full FluentBit config and setup instructions
+
+### Infrastructure Metrics: OTel Collector → SigNoz
+
+- **OpenTelemetry Collector Contrib** — runs on the **Rails app host** (not in Hubcap)
+- Collects host-level metrics via `hostmetrics` receiver (`cpu`, `load`, `memory`, `disk`, `filesystem`, `network`, `processes`, `process`)
+- Collects per-container Docker stats via `docker_stats` receiver, reading from a read-only Docker-socket proxy
+- Sets `service.name` and `host.name` explicitly from `OTEL_SERVICE_NAME` and `HOST_NAME` env vars via the `resource` processor
+- Augments with auto-detected metadata (OS, CPU type, etc.) via `resourcedetection` processor
+- Exports to SigNoz via OTLP HTTP (`https://<OTEL_DOMAIN>`) on port 443 with TLS
+- Metrics appear in SigNoz under the service dashboard and can drive alert rules
+- See [README.md](README.md) for full collector config and setup instructions
 
 ### Exception Tracking: GlitchTip
 
@@ -130,9 +144,11 @@ Set environment variables on the Rails app server:
 
 ```bash
 OTEL_SERVICE_NAME=my-rails-app
-OTEL_EXPORTER_OTLP_ENDPOINT=http://<hubcap-server>:4317
-# Use OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf and port 4318 if you prefer HTTP
+OTEL_EXPORTER_OTLP_ENDPOINT=https://<OTEL_DOMAIN>
+OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
+
+> For local development or when the Rails app and Hubcap are on the same Docker network, you can fall back to the direct unencrypted endpoint `http://<hubcap-server>:4318`.
 
 This automatically instruments:
 - HTTP requests (controller, action, path, status, duration)
@@ -142,7 +158,27 @@ This automatically instruments:
 - Puma worker metrics
 - External HTTP calls
 
-### 2. Sentry gems (exceptions + logs → GlitchTip)
+#### Additional env vars for FluentBit and infrastructure metrics
+
+Set these on the same Rails app host so FluentBit and the hostmetrics collector can attribute data correctly:
+
+```bash
+OTEL_SERVICE_NAME=my-rails-app   # shared by Rails, FluentBit, and hostmetrics collector
+HOST_NAME=web-01.example.com    # the host's public or canonical hostname
+```
+
+### 2. FluentBit + infrastructure metrics (logs + host metrics → SigNoz)
+
+Both the FluentBit log shipper and the hostmetrics collector need environment variables:
+
+```bash
+OTEL_SERVICE_NAME=my-rails-app
+HOST_NAME=web-01.example.com
+```
+
+When running as Docker containers or Kamal accessories, inject them via the container `env` block. See [README.md](README.md) for full configuration files.
+
+### 3. Sentry gems (exceptions + logs → GlitchTip)
 
 Add to `Gemfile`:
 
@@ -178,7 +214,7 @@ end
 
 Point `SENTRY_DSN` at your GlitchTip project DSN (found in GlitchTip project settings).
 
-### 3. Structured logging (optional, improves GlitchTip log quality)
+### 4. Structured logging (optional, improves GlitchTip log quality)
 
 Use `lograge` for concise single-line request logs:
 

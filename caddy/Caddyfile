@@ -7,5 +7,8 @@
 }
 
 {$OTEL_DOMAIN} {
+	# TLS-terminated OTLP ingestion. Rails apps and FluentBit send
+	# HTTPS traffic here on port 443; Caddy proxies it to the
+	# SigNoz collector's plain-HTTP port 4318 on the internal network.
 	reverse_proxy signoz-otel-collector:4318
 }
