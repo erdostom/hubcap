@@ -67,8 +67,10 @@ Rails Apps
 
 ### Alerting
 
-- SigNoz alert rules for metric-based alerts (error rate spikes, high latency, resource usage) → Slack/Discord
-- GlitchTip for per-exception alerts (new issues, regressions) → Slack
+- SigNoz alert rules for metric-based alerts (error rate, p95 latency, failed jobs, disk/memory) → Discord via a Slack-type channel pointed at `https://discord.com/api/webhooks/<id>/<token>/slack`
+- Rules live as code in `signoz/alerts/*.json` and are pushed with `signoz/alerts/apply.py` (upsert by rule name via `POST/PUT /api/v1/rules`)
+- GlitchTip for per-exception alerts (new issues, regressions) and uptime monitors → Discord via its native Discord recipient
+- See README.md → "Alerting → Discord" for setup
 
 ## Authentication
 
@@ -103,6 +105,9 @@ hubcap/
 └── signoz/
     ├── otel-collector-config.yaml        # OTel collector pipeline config
     ├── otel-collector-opamp-config.yaml  # OpAMP management config
+    ├── alerts/
+    │   ├── *.json                        # alert rules (SigNoz rule JSON, schema v2alpha1)
+    │   └── apply.py                      # upserts the rules via the SigNoz API
     └── clickhouse/
         ├── config.xml                    # ClickHouse server config
         ├── users.xml                     # ClickHouse users/quotas

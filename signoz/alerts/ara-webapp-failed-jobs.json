@@ -1,0 +1,70 @@
+{
+  "alert": "ara-webapp: failed background jobs",
+  "alertType": "TRACES_BASED_ALERT",
+  "schemaVersion": "v2alpha1",
+  "version": "v5",
+  "ruleType": "threshold_rule",
+  "labels": {
+    "severity": "warning",
+    "service": "ara-webapp"
+  },
+  "annotations": {
+    "summary": "ara-webapp background jobs are failing",
+    "description": "{{$value}} ActiveJob executions failed on ara-webapp in the last 15 minutes. Solid Queue retries count separately. Check GlitchTip for the exception and the Solid Queue dashboard for stuck jobs."
+  },
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "traces",
+            "stepInterval": "15m",
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ],
+            "filter": {
+              "expression": "service.name = 'ara-webapp' AND kind_string = 'Consumer' AND messaging.system = 'active_job' AND has_error = true"
+            }
+          }
+        }
+      ]
+    },
+    "selectedQueryName": "A",
+    "thresholds": {
+      "kind": "basic",
+      "spec": [
+        {
+          "name": "warning",
+          "target": 0,
+          "matchType": "at_least_once",
+          "op": "above",
+          "channels": [
+            "discord-alerts"
+          ]
+        }
+      ]
+    }
+  },
+  "evaluation": {
+    "kind": "rolling",
+    "spec": {
+      "evalWindow": "15m",
+      "frequency": "1m"
+    }
+  },
+  "notificationSettings": {
+    "renotify": {
+      "enabled": true,
+      "interval": "1h",
+      "alertStates": [
+        "firing"
+      ]
+    }
+  }
+}

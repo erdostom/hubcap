@@ -1,0 +1,76 @@
+{
+  "alert": "ara-webapp: slow responses (p95 > 2s)",
+  "alertType": "TRACES_BASED_ALERT",
+  "schemaVersion": "v2alpha1",
+  "version": "v5",
+  "ruleType": "threshold_rule",
+  "labels": {
+    "severity": "warning",
+    "service": "ara-webapp"
+  },
+  "annotations": {
+    "summary": "nariichi.org is slow",
+    "description": "p95 response time for ara-webapp was over 2s across the last 10 minutes (with at least 20 requests in the window). Check SigNoz \u2192 Services \u2192 ara-webapp for the slow endpoints and DB calls."
+  },
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "traces",
+            "stepInterval": "10m",
+            "aggregations": [
+              {
+                "expression": "p95(duration_nano)"
+              },
+              {
+                "expression": "count()"
+              }
+            ],
+            "filter": {
+              "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route != '/up'"
+            },
+            "having": {
+              "expression": "count() >= 20"
+            }
+          }
+        }
+      ]
+    },
+    "selectedQueryName": "A",
+    "thresholds": {
+      "kind": "basic",
+      "spec": [
+        {
+          "name": "warning",
+          "target": 2000000000,
+          "matchType": "at_least_once",
+          "op": "above",
+          "channels": [
+            "discord-alerts"
+          ]
+        }
+      ]
+    }
+  },
+  "evaluation": {
+    "kind": "rolling",
+    "spec": {
+      "evalWindow": "10m",
+      "frequency": "1m"
+    }
+  },
+  "notificationSettings": {
+    "renotify": {
+      "enabled": true,
+      "interval": "1h",
+      "alertStates": [
+        "firing"
+      ]
+    }
+  }
+}
