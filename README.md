@@ -386,7 +386,7 @@ alert once, e.g. by temporarily lowering a rule's threshold in the SigNoz UI
 
 ### 3. Push the rules
 
-Create an API key in SigNoz (Settings → API Keys, role Admin), then:
+Create an API key in SigNoz (Settings → API Keys; on 0.120 this is a service account key — give it the `signoz-editor` role), then:
 
 ```bash
 SIGNOZ_URL=https://signoz.monitoring.bithaiku.com SIGNOZ_API_KEY=... \

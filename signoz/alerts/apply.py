@@ -54,15 +54,15 @@ def main():
     base = os.environ.get("SIGNOZ_URL", "").rstrip("/")
     key = os.environ.get("SIGNOZ_API_KEY", "")
     if not args.dry_run and (not base or not key):
-        sys.exit("set SIGNOZ_URL and SIGNOZ_API_KEY (Settings → API Keys, role Admin)")
+        sys.exit("set SIGNOZ_URL and SIGNOZ_API_KEY (an API key / service-account key with the editor or admin role)")
 
     files = args.files or sorted(glob.glob(os.path.join(HERE, "*.json")))
     if not files:
         sys.exit("no rule files found")
 
     existing = {}
-    if not args.dry_run:
-        for r in api("GET", f"{base}/api/v1/rules", key)["data"]["rules"]:
+    if base and key:  # in --dry-run without credentials everything shows as "create"
+        for r in api("GET", f"{base}/api/v2/rules", key)["data"]:
             existing[r["alert"]] = r["id"]
 
     for path in files:
@@ -77,10 +77,10 @@ def main():
             print(f"[dry-run] {action}: {name}  (channels: {', '.join(channels)})")
             continue
         if name in existing:
-            api("PUT", f"{base}/api/v1/rules/{existing[name]}", key, rule)
+            api("PUT", f"{base}/api/v2/rules/{existing[name]}", key, rule)
             print(f"updated: {name}")
         else:
-            api("POST", f"{base}/api/v1/rules", key, rule)
+            api("POST", f"{base}/api/v2/rules", key, rule)
             print(f"created: {name}")
 
 

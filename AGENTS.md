@@ -68,7 +68,7 @@ Rails Apps
 ### Alerting
 
 - SigNoz alert rules for metric-based alerts (error rate, p95 latency, failed jobs, disk/memory) → Discord via a Slack-type channel pointed at `https://discord.com/api/webhooks/<id>/<token>/slack`
-- Rules live as code in `signoz/alerts/*.json` and are pushed with `signoz/alerts/apply.py` (upsert by rule name via `POST/PUT /api/v1/rules`)
+- Rules live as code in `signoz/alerts/*.json` and are pushed with `signoz/alerts/apply.py` (upsert by rule name via `POST/PUT /api/v2/rules`)
 - GlitchTip for per-exception alerts (new issues, regressions) and uptime monitors → Discord via its native Discord recipient
 - See README.md → "Alerting → Discord" for setup
 
