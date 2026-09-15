@@ -375,14 +375,34 @@ Alerts → Notification Channels → New channel:
 
 | Field | Value |
 |---|---|
-| Name | `discord-alerts` (the rule files route to this name; override with `apply.py --channel NAME`) |
+| Name | `discord-alerts` (the rule files route to this name; override with `apply.py --channel NAME`. Rule creation fails if the channel doesn't exist yet, so create it first) |
 | Type | Slack |
 | Webhook URL | `https://discord.com/api/webhooks/<id>/<token>/slack` |
 | Channel | `#tech-automatic-error-reporting` (informational only) |
 
-Click **Test** — a message should land in Discord. Then verify a *real*
-alert once, e.g. by temporarily lowering a rule's threshold in the SigNoz UI
-(the Test button uses a different payload path than firing alerts).
+**Before saving, replace the Title template.** The UI's default title appends
+every alert label in brackets; a real alert carries `ruleId`, `threshold.name`
+and the rule's own labels, which pushes it past Discord's 256-character
+embed-title limit and Discord rejects the whole message with
+`400 {"title": ["Must be 256 or fewer in length."]}`. The channel **Test**
+still passes because a test alert has only two labels, so this only shows up
+on the first real alert. Use this as the Title:
+
+```
+[{{ .Status | toUpper }}{{ if eq .Status "firing" }}:{{ .Alerts.Firing | len }}{{ end }}] {{ .CommonLabels.alertname }}
+```
+
+Leave Text as is. Click **Test** — a message should land in Discord. Then
+verify a *real* alert once, e.g. by temporarily lowering a rule's threshold
+(edit the JSON, `apply.py`, wait ~3 minutes, revert, `apply.py` again). A
+rule's own "Test Notification" button does **not** reach the channel on 0.120
+(the test alert matches no per-rule route), only the channel's Test does.
+
+If real alerts don't arrive, the reason is in the SigNoz container log:
+
+```bash
+docker logs hubcap-signoz --since 1h 2>&1 | grep 'Notify for alerts failed' | cut -c1-600
+```
 
 ### 3. Push the rules
 
