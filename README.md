@@ -10,20 +10,66 @@ See [AGENTS.md](AGENTS.md) for full architecture details and project structure.
 |---|---|
 | **SigNoz** | APM: traces, metrics dashboards, logs, alerting |
 | **GlitchTip** | Exception tracking, uptime monitoring |
-| **Caddy** | Reverse proxy with automatic TLS |
+| **kamal-proxy** | TLS termination + reverse proxy (via Kamal) |
+
+> A legacy `docker-compose.yml` setup is kept for reference; new deployments should use Kamal.
 
 ## Deployment
 
+Hubcap deploys with [Kamal](https://kamal-deploy.org). Everything runs as Kamal **accessories** (prebuilt upstream images — nothing is built), and `kamal-proxy` replaces Caddy for TLS termination on ports 80/443.
+
+### 0. Install Kamal
+
 ```bash
-cp .env.example .env
-# fill in .env — at minimum: SIGNOZ_DOMAIN, GLITCHTIP_DOMAIN,
-#   SIGNOZ_JWT_SECRET, GLITCHTIP_SECRET_KEY, GLITCHTIP_DB_PASSWORD
-docker compose up -d
+gem install kamal        # 2.x; requires Ruby 3.1+ locally
 ```
 
-On first start, SigNoz runs its own DB migrations automatically. Visit `https://<SIGNOZ_DOMAIN>` and create your admin account.
+### 1. Configure
 
-Firewall ports 4317 and 4318 to only accept connections from your Rails app servers.
+Edit the server host and the three domains at the top of `config/deploy.yml`, then:
+
+```bash
+cp .kamal/secrets.example .kamal/secrets
+# fill in .kamal/secrets — at minimum: KAMAL_REGISTRY_USERNAME/PASSWORD,
+#   SIGNOZ_TOKENIZER_JWT_SECRET, SECRET_KEY, DATABASE_URL, POSTGRES_PASSWORD
+```
+
+All three domains (`signoz.example.com`, `glitchtip.example.com`, `otel.example.com`) must have DNS A records pointing at the server before first boot — kamal-proxy provisions Let's Encrypt certificates automatically.
+
+### 2. Boot
+
+```bash
+kamal docker setup        # once — installs Docker on the server
+kamal proxy boot          # starts kamal-proxy on ports 80/443
+kamal accessory boot all  # boots every container, in the order defined in config/deploy.yml
+```
+
+Boot order (as defined in `config/deploy.yml`): zookeeper → clickhouse-init (one-shot) → clickhouse → clickhouse-migrator (one-shot, runs the SigNoz schema migrations) → signoz → otel-collector → otel-gateway → glitchtip-db → glitchtip-redis → glitchtip-migrate → glitchtip-web → glitchtip-worker. Every one-shot and long-running container retries until its dependencies are ready, so a slow start self-heals.
+
+Visit `https://<SIGNOZ_DOMAIN>` and create your SigNoz admin account, then `https://<GLITCHTIP_DOMAIN>` and set up GlitchTip (the `ENABLE_USER_REGISTRATION` / `ENABLE_ORGANIZATION_CREATION` flags in `config/deploy.yml` start as `true` for initial setup — flip both to `false` afterwards and run `kamal accessory reboot glitchtip-web`).
+
+Firewall port 4318 to only accept connections from your Rails app servers. No other ports besides 80/443 need to be public.
+
+### 3. Day-2 operations
+
+```bash
+kamal accessory logs signoz -f         # follow SigNoz UI logs
+kamal accessory logs otel-collector    # collector logs
+kamal accessory reboot signoz          # re-create a container after an image/env/config change
+kamal accessory exec glitchtip-web --reuse -i sh # shell into the running GlitchTip web container
+kamal accessory reboot glitchtip-migrate # re-run GlitchTip DB migrations (one-shot container)
+```
+
+Bumping an image version: edit the `image:` in `config/deploy.yml`, then `kamal accessory reboot <name>` re-pulls and re-creates that container. Uploaded config files (ClickHouse XML, collector YAML, Caddyfile) are re-uploaded on every boot, so config changes just need a `reboot` too.
+
+> **Note:** do not run `kamal deploy` — Hubcap runs prebuilt images and is managed entirely through `kamal accessory` commands.
+
+### 4. Cutover from the legacy docker-compose setup
+
+1. Back up volumes on the old server (ClickHouse, `signoz_sqlite`, `glitchtip_db_data`) with `docker run --rm -v <vol>:/data -v $PWD:/backup alpine tar czf /backup/<vol>.tgz /data`.
+2. Boot the new server per the steps above (fresh server — no volume migration needed).
+3. Create the GlitchTip projects again and point the Rails apps' `SENTRY_DSN` at the new DSNs. The `OTEL_EXPORTER_OTLP_ENDPOINT` (`https://<OTEL_DOMAIN>`) and FluentBit config need no changes.
+4. Once the new server is verified, retire the old one — then delete `docker-compose.yml`, `.env.example` and the legacy `caddy/Caddyfile`.
 
 ## Adding a Rails App
 
@@ -59,7 +105,7 @@ OTEL_EXPORTER_OTLP_ENDPOINT=https://<OTEL_DOMAIN>
 OTEL_EXPORTER_OTLP_PROTOCOL=http/protobuf
 ```
 
-> **Production recommendation:** Always use HTTPS (`https://<OTEL_DOMAIN>`) with `http/protobuf`. Caddy terminates TLS and proxies to the SigNoz collector on port 4318. For local development or when FluentBit and the collector are on the same Docker network, you can fall back to the direct unencrypted endpoint `http://<hubcap-server>:4318`.
+> **Production recommendation:** Always use HTTPS (`https://<OTEL_DOMAIN>`) with `http/protobuf`. kamal-proxy terminates TLS and proxies to the SigNoz collector on port 4318 (via the internal otel-gateway container). For local development or when FluentBit and the collector are on the same Docker network, you can fall back to the direct unencrypted endpoint `http://<hubcap-server>:4318`.
 
 This auto-instruments HTTP requests, ActiveRecord queries, Sidekiq jobs, Redis, Puma, and external HTTP calls.
 
@@ -166,7 +212,7 @@ When running FluentBit as a Docker container or Kamal accessory, inject them via
     Logs_body_key        log
 ```
 
-> **Production:** Use `Host <OTEL_DOMAIN>` (e.g. `otel.example.com`) with `Tls On` and port `443`. For local development on the same Docker network you can use `Host <hubcap-server>` with `Port 4318`, `Tls Off`, and `Tls.verify Off`.
+> **Production:** Use `Host <OTEL_DOMAIN>` (e.g. `otel.example.com`) with `Tls On` and port `443`. For local development on the same Docker network you can use `Host <hubcap-server>` with `Port 4318`, `Tls Off`, and `Tls.verify Off`. OTLP gRPC is not exposed — use OTLP HTTP.
 
 #### `service-name.lua`
 

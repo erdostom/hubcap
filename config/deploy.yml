@@ -1,0 +1,285 @@
+# =============================================================================
+# Hubcap — Kamal configuration
+#
+# Hubcap is a monitoring appliance built entirely from prebuilt upstream
+# images (SigNoz, GlitchTip and friends), so everything runs as Kamal
+# *accessories* — nothing is built or pushed to a registry and `kamal deploy`
+# is never used. Containers are booted in order with `kamal accessory boot`.
+#
+# kamal-proxy (started with `kamal proxy boot`) replaces the old Caddy
+# container: it terminates TLS on 80/443 for the SigNoz UI, the GlitchTip UI,
+# and the OTLP ingestion domain.
+#
+# First-time setup:
+#   cp .kamal/secrets.example .kamal/secrets   # then fill it in
+#   kamal docker setup                         # install Docker on the server
+#   kamal proxy boot                           # start kamal-proxy (80/443)
+#   kamal accessory boot all                   # boots every container in order
+#
+# Edit the EDIT-ME values below (server host, domains) and the secrets file
+# before first boot.
+# =============================================================================
+
+service: hubcap
+
+# Placeholder image: nothing is ever built or deployed from this config, but
+# Kamal requires the key. Bump it alongside the SigNoz accessory image when
+# upgrading.
+image: signoz/signoz:v0.120.0
+
+# Unused (nothing is built), but Kamal requires a builder with an arch.
+builder:
+  arch: [ amd64 ]
+
+# EDIT: the Hubcap server (SSH host/IP), plus the three domains below.
+# All domains must have DNS A records pointing at this server before first
+# boot — kamal-proxy provisions Let's Encrypt certificates for them.
+x-server: &server 203.0.113.10
+
+servers:
+  - *server
+
+# Docker Hub credentials (array form reads from .kamal/secrets). All Hubcap
+# images are public, but a (free) account avoids anonymous pull rate limits.
+registry:
+  server: docker.io
+  username: [KAMAL_REGISTRY_USERNAME]
+  password: [KAMAL_REGISTRY_PASSWORD]
+
+ssh:
+  user: <%= ENV.fetch("HUBCAP_SSH_USER", "root") %>
+
+# Allow generous time for first boots (ClickHouse migrations are slow).
+deploy_timeout: 300
+
+# Cap container log growth (applies to all app containers and accessories).
+logging:
+  options:
+    max-size: "10m"
+    max-file: "3"
+
+# Accessory `service:` values match the old docker-compose service names, so
+# container DNS names (e.g. `signoz-clickhouse`, `glitchtip-db`) and every
+# DSN/config file stay unchanged. `kamal accessory boot all` boots them in the
+# order defined below.
+accessories:
+
+  # ---------------------------------------------------------------------------
+  # SigNoz — ZooKeeper (ClickHouse coordination)
+  # ---------------------------------------------------------------------------
+  zookeeper:
+    service: signoz-zookeeper
+    image: signoz/zookeeper:3.7.1
+    host: *server
+    env:
+      clear:
+        ZOO_SERVER_ID: "1"
+        ALLOW_ANONYMOUS_LOGIN: "yes"
+        ZOO_AUTOPURGE_INTERVAL: "1"
+        ZOO_ENABLE_PROMETHEUS_METRICS: "yes"
+        ZOO_PROMETHEUS_METRICS_PORT_NUMBER: "9141"
+    volumes:
+      - signoz_zookeeper:/bitnami/zookeeper
+
+  # One-shot: downloads the histogram-quantile ClickHouse UDF into the shared
+  # user_scripts volume. Runs before ClickHouse; re-run with
+  # `kamal accessory reboot clickhouse-init`.
+  clickhouse-init:
+    service: signoz-clickhouse-init
+    image: clickhouse/clickhouse-server:25.8
+    host: *server
+    cmd: /bin/bash /hubcap/clickhouse-init.sh
+    files:
+      - signoz/clickhouse-init.sh:/hubcap/clickhouse-init.sh:ro
+    volumes:
+      - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts/
+    options:
+      restart: "on-failure"
+
+  # One-shot: creates the ClickHouse schema for SigNoz. Retries (via Docker
+  # restart-on-failure) until ClickHouse is up.
+  clickhouse-migrator:
+    service: signoz-telemetrystore-migrator
+    image: signoz/signoz-otel-collector:v0.144.3
+    host: *server
+    options:
+      entrypoint: /bin/sh
+      restart: "on-failure"
+    cmd: '-c "/signoz-otel-collector migrate bootstrap && /signoz-otel-collector migrate sync up && /signoz-otel-collector migrate async up"'
+    env:
+      clear:
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN: tcp://signoz-clickhouse:9000
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER: cluster
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION: "true"
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_TIMEOUT: 10m
+
+  signoz-clickhouse:
+    service: signoz-clickhouse
+    image: clickhouse/clickhouse-server:25.8
+    host: *server
+    files:
+      - signoz/clickhouse/config.xml:/etc/clickhouse-server/config.xml:ro
+      - signoz/clickhouse/users.xml:/etc/clickhouse-server/users.xml:ro
+      - signoz/clickhouse/custom-function.xml:/etc/clickhouse-server/custom-function.xml:ro
+      - signoz/clickhouse/cluster.xml:/etc/clickhouse-server/config.d/cluster.xml:ro
+      - signoz/clickhouse/default-user.xml:/etc/clickhouse-server/users.d/default-user.xml:ro
+    volumes:
+      - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts/
+      - signoz_clickhouse:/var/lib/clickhouse/
+    options:
+      tty: true
+      ulimit:
+        - nproc=65535
+        - nofile=262144:262144
+
+  # SigNoz UI — served at SIGNOZ_DOMAIN by kamal-proxy with automatic TLS.
+  signoz:
+    service: signoz
+    image: signoz/signoz:v0.120.0
+    host: *server
+    env:
+      clear:
+        SIGNOZ_ALERTMANAGER_PROVIDER: signoz
+        SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN: tcp://signoz-clickhouse:9000
+        SIGNOZ_SQLSTORE_SQLITE_PATH: /var/lib/signoz/signoz.db
+      secret:
+        - SIGNOZ_TOKENIZER_JWT_SECRET
+    volumes:
+      - signoz_sqlite:/var/lib/signoz/
+    proxy:
+      host: signoz.example.com
+      app_port: 8080
+      ssl: true
+      response_timeout: 120
+      healthcheck:
+        path: /api/v1/health
+        interval: 3
+        timeout: 3
+
+  # SigNoz OTLP ingestion. Serves OTLP/HTTP on the kamal network and publishes
+  # 4318 for direct (unencrypted, same-host/LAN) senders. OTLP gRPC (4317) was
+  # dropped — all senders use OTLP HTTP, which kamal-proxy terminates TLS for
+  # via the otel-gateway accessory below. On boot it checks the ClickHouse
+  # schema migrations, then starts the collector (docker restarts it if
+  # ClickHouse is not ready yet).
+  otel-collector:
+    service: signoz-otel-collector
+    image: signoz/signoz-otel-collector:v0.144.3
+    host: *server
+    port: "4318:4318"
+    files:
+      - signoz/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+      - signoz/otel-collector-opamp-config.yaml:/etc/manager-config.yaml:ro
+    options:
+      entrypoint: /bin/sh
+    cmd: '-c "/signoz-otel-collector migrate sync check && exec /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml"'
+    env:
+      clear:
+        OTEL_RESOURCE_ATTRIBUTES: host.name=hubcap,os.type=linux
+        LOW_CARDINAL_EXCEPTION_GROUPING: "false"
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN: tcp://signoz-clickhouse:9000
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER: cluster
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION: "true"
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_TIMEOUT: 10m
+
+  # TLS frontend for OTLP ingestion. kamal-proxy terminates TLS for
+  # OTEL_DOMAIN on 443 and forwards to this Caddy accessory, which proxies
+  # plain HTTP to the collector's port 4318 on the internal network.
+  # (kamal-proxy requires a 2xx health check, which the OTLP receiver does not
+  # serve — Caddy provides /healthz for it.)
+  otel-gateway:
+    service: otel-gateway
+    image: caddy:2-alpine
+    host: *server
+    files:
+      - caddy/otel-gateway.Caddyfile:/etc/caddy/Caddyfile:ro
+    proxy:
+      host: otel.example.com
+      app_port: 80
+      ssl: true
+      response_timeout: 120
+      healthcheck:
+        path: /healthz
+        interval: 3
+        timeout: 3
+
+  # ---------------------------------------------------------------------------
+  # GlitchTip
+  # ---------------------------------------------------------------------------
+  glitchtip-db:
+    service: glitchtip-db
+    image: postgres:16-alpine
+    host: *server
+    env:
+      clear:
+        POSTGRES_USER: glitchtip
+        POSTGRES_DB: glitchtip
+      secret:
+        - POSTGRES_PASSWORD
+    volumes:
+      - glitchtip_db_data:/var/lib/postgresql/data
+
+  glitchtip-redis:
+    service: glitchtip-redis
+    image: redis:8-alpine
+    host: *server
+
+  # One-shot schema migration. Booted as part of the initial setup (waits for
+  # the database to come up); re-run after GlitchTip image upgrades with
+  # `kamal accessory reboot glitchtip-migrate`.
+  glitchtip-migrate:
+    service: glitchtip-migrate
+    image: glitchtip/glitchtip:6
+    host: *server
+    options:
+      restart: "no"
+    cmd: 'sh -c "until ./manage.py migrate --noinput; do echo waiting for database; sleep 5; done"'
+    env:
+      secret:
+        - DATABASE_URL
+        - SECRET_KEY
+
+  glitchtip-web:
+    service: glitchtip-web
+    image: glitchtip/glitchtip:6
+    host: *server
+    cmd: >-
+      uwsgi --module=glitchtip.wsgi:application --env DJANGO_SETTINGS_MODULE=glitchtip.settings
+      --master --pidfile=/tmp/project-master.pid --log-x-forwarded-for --log-format-strftime
+      --http-socket=:8080 --workers=2 --cheaper=1 --cheaper-algo=busyness --cheaper-overload=30
+      --cheaper-step=1 --cheaper-busyness-max=50 --cheaper-busyness-min=25
+      --cheaper-busyness-multiplier=20 --harakiri=120 --max-requests=10000
+      --worker-reload-mercy=10 --die-on-term --enable-threads --single-interpreter
+      --post-buffering --buffer-size=83146 --ignore-sigpipe --ignore-write-errors
+      --disable-write-exception --listen=128
+    env:
+      clear:
+        GLITCHTIP_DOMAIN: https://glitchtip.example.com
+        DEFAULT_FROM_EMAIL: noreply@example.com
+        REDIS_URL: redis://glitchtip-redis:6379/0
+        CELERY_WORKER_AUTOSCALE: "1,3"
+        ENABLE_ORGANIZATION_CREATION: "true"
+        ENABLE_USER_REGISTRATION: "true"
+      secret:
+        - DATABASE_URL
+        - SECRET_KEY
+        - GLITCHTIP_EMAIL_URL
+    proxy:
+      host: glitchtip.example.com
+      app_port: 8080
+      ssl: true
+      response_timeout: 120
+
+  glitchtip-worker:
+    service: glitchtip-worker
+    image: glitchtip/glitchtip:6
+    host: *server
+    cmd: ./bin/run-celery-with-beat.sh
+    env:
+      clear:
+        GLITCHTIP_DOMAIN: https://glitchtip.example.com
+        REDIS_URL: redis://glitchtip-redis:6379/0
+        CELERY_WORKER_AUTOSCALE: "1,3"
+      secret:
+        - DATABASE_URL
+        - SECRET_KEY

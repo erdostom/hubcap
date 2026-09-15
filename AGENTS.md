@@ -27,7 +27,7 @@ Rails Apps
 
 - **SigNoz** — unified observability UI: traces, metrics dashboards, logs, alerting
 - Built on **ClickHouse** for fast, efficient storage
-- Receives data via the **OpenTelemetry** protocol (OTLP) on ports 4317 (gRPC) and 4318 (HTTP)
+- Receives data via the **OpenTelemetry** protocol (OTLP) — OTLP/HTTP only, on port 4318 internally and via the TLS-terminated `OTEL_DOMAIN` on port 443 (OTLP gRPC is not exposed)
 - Out-of-box dashboards for p99 latency, error rates, DB query times, Sidekiq job latency — no manual dashboard building required
 - Alerts to Slack/Discord via built-in alert rules
 
@@ -43,7 +43,7 @@ Rails Apps
 - Parses Docker's JSON log wrapper, then attempts a second JSON parse of the inner `log` field (picks up structured logs from `lograge` etc.)
 - Sets `service.name` from the app's structured JSON log field `service_name`, with `OTEL_SERVICE_NAME` env var fallback, then Docker container ID fallback
 - Sets `host.name` from the `HOST_NAME` env var for every log line
-- Forwards to SigNoz OTel collector via OTLP HTTP on port 443 (TLS) through the Caddy-proxied `OTEL_DOMAIN`, or port 4318 for direct local connections
+- Forwards to SigNoz OTel collector via OTLP HTTP on port 443 (TLS) through the kamal-proxy-proxied `OTEL_DOMAIN`, or port 4318 for direct local connections
 - Logs appear in SigNoz Logs Explorer, searchable by service, level, and full-text
 - Trace correlation works automatically when the log line contains a `trace_id` (emitted by `opentelemetry-ruby`)
 - See [README.md](README.md) for full FluentBit config and setup instructions
@@ -76,33 +76,41 @@ Rails Apps
 
 | Service | Auth | Exposure |
 |---|---|---|
-| **Caddy** | TLS termination + reverse proxy, automatic Let's Encrypt certs | Public (ports 80/443) |
-| **SigNoz** | Built-in username/password (set on first login) | Behind Caddy (`signoz.example.com`) |
-| **GlitchTip** | Built-in email/password, supports multiple users/orgs | Behind Caddy (`glitchtip.example.com`) |
+| **kamal-proxy** | TLS termination + reverse proxy, automatic Let's Encrypt certs | Public (ports 80/443) |
+| **SigNoz** | Built-in username/password (set on first login) | Behind kamal-proxy (`signoz.example.com`) |
+| **GlitchTip** | Built-in email/password, supports multiple users/orgs | Behind kamal-proxy (`glitchtip.example.com`) |
 | **ClickHouse** | No auth — internal Docker network only | Internal only |
 | **Zookeeper** | No auth — internal Docker network only | Internal only |
-| **OTel Collector** | No auth — accepts OTLP on ports 4317/4318 | Ports open to Rails apps |
+| **OTel Collector** | No auth — accepts OTLP/HTTP on port 4318 | Port open to Rails apps |
 | **FluentBit** | No auth — runs on Rails app host, not in Hubcap | Rails app host only |
 
-Only Caddy gets public-facing ports (80/443). The OTel Collector ports (4317/4318) should be firewalled to only accept connections from your Rails app servers.
+Only kamal-proxy gets public-facing ports (80/443). The OTel Collector port (4318) should be firewalled to only accept connections from your Rails app servers.
 
 ## Deployment
 
-- Docker Compose on a single server (4-8 GB RAM)
+- Kamal (see `config/deploy.yml`) on a single server (4-8 GB RAM); everything runs as prebuilt-image accessories managed by kamal-proxy
 - SigNoz requires at least 4 GB RAM; 6-8 GB recommended for comfortable operation
+- See [README.md](README.md) for setup, boot order, and day-2 commands
+- A legacy `docker-compose.yml` + Caddy setup is kept for reference
 
 ## Project Structure
 
 ```
 hubcap/
 ├── AGENTS.md
-├── docker-compose.yml
-├── .env.example
+├── config/
+│   └── deploy.yml                       # Kamal configuration (all containers as accessories)
+├── .kamal/
+│   └── secrets.example                  # template for .kamal/secrets (domains, secrets)
+├── docker-compose.yml                   # legacy compose setup (reference)
+├── .env.example                         # env vars for the legacy compose setup
 ├── caddy/
-│   └── Caddyfile                        # reverse proxy config (subdomain → service)
+│   ├── Caddyfile                        # reverse proxy config for the legacy compose setup
+│   └── otel-gateway.Caddyfile           # OTLP TLS gateway (used by the Kamal otel-gateway accessory)
 └── signoz/
     ├── otel-collector-config.yaml        # OTel collector pipeline config
     ├── otel-collector-opamp-config.yaml  # OpAMP management config
+    ├── clickhouse-init.sh                # downloads the histogram-quantile UDF (one-shot)
     └── clickhouse/
         ├── config.xml                    # ClickHouse server config
         ├── users.xml                     # ClickHouse users/quotas
