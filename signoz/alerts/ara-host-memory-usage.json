@@ -1,0 +1,99 @@
+{
+  "alert": "ara host: memory usage above 90%",
+  "alertType": "METRIC_BASED_ALERT",
+  "schemaVersion": "v2alpha1",
+  "version": "v5",
+  "ruleType": "threshold_rule",
+  "labels": {
+    "severity": "warning",
+    "service": "ara-webapp"
+  },
+  "annotations": {
+    "summary": "arariichi.org host is low on memory",
+    "description": "Memory in use on the ARA host has been {{$value}}% for 10 minutes (used / (used+free+buffers+cache)). Check docker stats for a runaway container."
+  },
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "aggregations": [
+              {
+                "metricName": "system.memory.usage",
+                "temporality": "cumulative",
+                "timeAggregation": "latest",
+                "spaceAggregation": "sum"
+              }
+            ],
+            "filter": {
+              "expression": "host.name = 'arariichi.org' AND state = 'used'"
+            }
+          }
+        },
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "B",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "aggregations": [
+              {
+                "metricName": "system.memory.usage",
+                "temporality": "cumulative",
+                "timeAggregation": "latest",
+                "spaceAggregation": "sum"
+              }
+            ],
+            "filter": {
+              "expression": "host.name = 'arariichi.org' AND state IN ('used', 'free', 'buffered', 'cached')"
+            }
+          }
+        },
+        {
+          "type": "builder_formula",
+          "spec": {
+            "name": "F1",
+            "expression": "A * 100 / B"
+          }
+        }
+      ]
+    },
+    "selectedQueryName": "F1",
+    "thresholds": {
+      "kind": "basic",
+      "spec": [
+        {
+          "name": "warning",
+          "target": 90,
+          "matchType": "all_the_times",
+          "op": "above",
+          "channels": [
+            "discord-alerts"
+          ]
+        }
+      ]
+    }
+  },
+  "evaluation": {
+    "kind": "rolling",
+    "spec": {
+      "evalWindow": "10m",
+      "frequency": "1m"
+    }
+  },
+  "notificationSettings": {
+    "renotify": {
+      "enabled": true,
+      "interval": "1h",
+      "alertStates": [
+        "firing"
+      ]
+    }
+  }
+}

@@ -350,3 +350,77 @@ Log into `https://<GLITCHTIP_DOMAIN>`, create a project, and copy the DSN into `
 - **SigNoz** → Services — confirm your app appears with traces and infrastructure metrics
 - **SigNoz** → Logs Explorer — filter by `service.name = my-rails-app`
 - **GlitchTip** — trigger a test exception and confirm it appears
+
+## Alerting → Discord
+
+Alert rules are versioned in [`signoz/alerts/`](signoz/alerts/) as SigNoz rule
+JSON (schema `v2alpha1`, query builder `v5`, works on SigNoz ≥ 0.120) and pushed
+with [`signoz/alerts/apply.py`](signoz/alerts/apply.py). SigNoz does the
+metric/latency/host alerting; GlitchTip does per-exception and uptime alerting.
+Both post to the same Discord channel through webhooks — no bot needed.
+
+### 1. Discord webhook
+
+In Discord: channel settings → Integrations → Webhooks → New Webhook, copy the
+URL. For ARA the channel is `#tech-automatic-error-reporting`
+(id `1549177024898277386`). One webhook can be shared by SigNoz and GlitchTip.
+
+### 2. SigNoz notification channel
+
+SigNoz has no native Discord channel, but Discord accepts Slack-format payloads
+on the same webhook URL with `/slack` appended, and SigNoz does not validate
+the Slack webhook host server-side.
+
+Alerts → Notification Channels → New channel:
+
+| Field | Value |
+|---|---|
+| Name | `discord-alerts` (the rule files route to this name; override with `apply.py --channel NAME`) |
+| Type | Slack |
+| Webhook URL | `https://discord.com/api/webhooks/<id>/<token>/slack` |
+| Channel | `#tech-automatic-error-reporting` (informational only) |
+
+Click **Test** — a message should land in Discord. Then verify a *real*
+alert once, e.g. by temporarily lowering a rule's threshold in the SigNoz UI
+(the Test button uses a different payload path than firing alerts).
+
+### 3. Push the rules
+
+Create an API key in SigNoz (Settings → API Keys; on 0.120 this is a service account key — give it the `signoz-editor` role), then:
+
+```bash
+SIGNOZ_URL=https://signoz.monitoring.bithaiku.com SIGNOZ_API_KEY=... \
+  signoz/alerts/apply.py            # add --dry-run to preview
+```
+
+Rules are matched by name; re-running updates them in place and never deletes.
+Edit the JSON, commit, re-run. To export a rule you tuned in the UI, open it,
+use "Show JSON" and paste it back into the file.
+
+### 4. What the rules do (ARA, service `ara-webapp`, prod only)
+
+| Rule | Signal | Fires when | Quiet by design |
+|---|---|---|---|
+| HTTP 5xx error rate | traces | > 2 % of server requests errored in the last 5 min **and** ≥ 3 errors | 404s are not errors; `/up` excluded |
+| Slow responses | traces | p95 of server request duration > 2 s over the last 10 min, only if ≥ 20 requests in that window | one slow request at 3 am cannot fire it |
+| Failed background jobs | traces | any ActiveJob execution errored in the last 15 min | Solid Queue retries count separately |
+| Host disk | metrics | `/` more than 85 % full for 10 min straight | |
+| Host memory | metrics | used / (used+free+buffers+cache) > 90 % for 10 min straight | |
+
+Every rule re-notifies at most hourly while firing and sends a resolved
+message. Tune: thresholds and windows live in each file under
+`condition.thresholds.spec[0].target` and `evaluation.spec.evalWindow`; the
+request-count gates are the `having` expressions.
+
+Not covered by SigNoz on purpose: "site is down" (no traffic looks the same as
+no data) — use a GlitchTip uptime monitor for that, and Solid Queue queue *lag*,
+which would need an app-side metric.
+
+### 5. GlitchTip → Discord (exceptions + uptime)
+
+GlitchTip has a native Discord recipient. Per project: Settings → Alerts →
+Create New Alert → add recipient → **Discord** → paste the plain webhook URL
+(no `/slack` suffix). Default condition "1 event in 1 minute" pings on every
+new occurrence; raise it for noisy projects. Tick "Uptime" on the same alert
+and add an uptime monitor (Uptime Monitors → New) for `https://nariichi.org/up`
+to get down/up notifications.

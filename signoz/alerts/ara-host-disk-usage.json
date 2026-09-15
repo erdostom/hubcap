@@ -1,0 +1,99 @@
+{
+  "alert": "ara host: disk usage on / above 85%",
+  "alertType": "METRIC_BASED_ALERT",
+  "schemaVersion": "v2alpha1",
+  "version": "v5",
+  "ruleType": "threshold_rule",
+  "labels": {
+    "severity": "critical",
+    "service": "ara-webapp"
+  },
+  "annotations": {
+    "summary": "arariichi.org host is running out of disk",
+    "description": "The root filesystem on the ARA host has been {{$value}}% full for 10 minutes. SQLite databases, Litestream and Docker images live here; clean up docker (docker system prune) or grow the volume."
+  },
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "aggregations": [
+              {
+                "metricName": "system.filesystem.usage",
+                "temporality": "cumulative",
+                "timeAggregation": "latest",
+                "spaceAggregation": "sum"
+              }
+            ],
+            "filter": {
+              "expression": "host.name = 'arariichi.org' AND mountpoint = '/' AND state = 'used'"
+            }
+          }
+        },
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "B",
+            "signal": "metrics",
+            "stepInterval": "1m",
+            "aggregations": [
+              {
+                "metricName": "system.filesystem.usage",
+                "temporality": "cumulative",
+                "timeAggregation": "latest",
+                "spaceAggregation": "sum"
+              }
+            ],
+            "filter": {
+              "expression": "host.name = 'arariichi.org' AND mountpoint = '/'"
+            }
+          }
+        },
+        {
+          "type": "builder_formula",
+          "spec": {
+            "name": "F1",
+            "expression": "A * 100 / B"
+          }
+        }
+      ]
+    },
+    "selectedQueryName": "F1",
+    "thresholds": {
+      "kind": "basic",
+      "spec": [
+        {
+          "name": "critical",
+          "target": 85,
+          "matchType": "all_the_times",
+          "op": "above",
+          "channels": [
+            "discord-alerts"
+          ]
+        }
+      ]
+    }
+  },
+  "evaluation": {
+    "kind": "rolling",
+    "spec": {
+      "evalWindow": "10m",
+      "frequency": "1m"
+    }
+  },
+  "notificationSettings": {
+    "renotify": {
+      "enabled": true,
+      "interval": "1h",
+      "alertStates": [
+        "firing"
+      ]
+    }
+  }
+}

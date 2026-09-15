@@ -1,0 +1,96 @@
+{
+  "alert": "ara-webapp: HTTP 5xx error rate",
+  "alertType": "TRACES_BASED_ALERT",
+  "schemaVersion": "v2alpha1",
+  "version": "v5",
+  "ruleType": "threshold_rule",
+  "labels": {
+    "severity": "critical",
+    "service": "ara-webapp"
+  },
+  "annotations": {
+    "summary": "nariichi.org is returning 5xx errors",
+    "description": "{{$value}}% of requests to ara-webapp failed with a server error over the last 5 minutes (at least 3 errors). Check GlitchTip for the exception and SigNoz traces for the failing routes."
+  },
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "traces",
+            "stepInterval": "5m",
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ],
+            "filter": {
+              "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route != '/up' AND has_error = true"
+            },
+            "having": {
+              "expression": "count() >= 3"
+            }
+          }
+        },
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "B",
+            "signal": "traces",
+            "stepInterval": "5m",
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ],
+            "filter": {
+              "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route != '/up'"
+            }
+          }
+        },
+        {
+          "type": "builder_formula",
+          "spec": {
+            "name": "F1",
+            "expression": "A * 100 / B"
+          }
+        }
+      ]
+    },
+    "selectedQueryName": "F1",
+    "thresholds": {
+      "kind": "basic",
+      "spec": [
+        {
+          "name": "critical",
+          "target": 2,
+          "matchType": "at_least_once",
+          "op": "above",
+          "channels": [
+            "discord-alerts"
+          ]
+        }
+      ]
+    }
+  },
+  "evaluation": {
+    "kind": "rolling",
+    "spec": {
+      "evalWindow": "5m",
+      "frequency": "1m"
+    }
+  },
+  "notificationSettings": {
+    "renotify": {
+      "enabled": true,
+      "interval": "1h",
+      "alertStates": [
+        "firing"
+      ]
+    }
+  }
+}
