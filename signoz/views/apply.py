@@ -50,8 +50,10 @@ def main():
 
     existing = {}
     if base and key:
-        for v in api("GET", f"{base}/api/v1/explorer/views", key).get("data") or []:
-            existing[v["name"]] = v["id"]
+        # The list endpoint returns nothing without a sourcePage filter.
+        for page in ("logs", "traces"):
+            for v in api("GET", f"{base}/api/v1/explorer/views?sourcePage={page}", key).get("data") or []:
+                existing[v["name"]] = v["id"]
 
     for path in files:
         with open(path) as f:
