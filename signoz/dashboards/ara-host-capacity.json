@@ -10,7 +10,7 @@
   "variables": {},
   "widgets": [
     {
-      "id": "3ae1de98-599e-4a8c-837a-587c2085e06c",
+      "id": "2b25b2a2-2c64-4bdb-8989-a159ad8a0d62",
       "title": "CPU busy %",
       "description": "",
       "panelTypes": "value",
@@ -65,7 +65,7 @@
               "queryName": "A",
               "expression": "A",
               "dataSource": "metrics",
-              "disabled": false,
+              "disabled": true,
               "stepInterval": 60,
               "legend": "",
               "aggregations": [
@@ -80,6 +80,10 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org' AND state != 'idle'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -92,7 +96,7 @@
               "queryName": "B",
               "expression": "B",
               "dataSource": "metrics",
-              "disabled": false,
+              "disabled": true,
               "stepInterval": 60,
               "legend": "",
               "aggregations": [
@@ -106,6 +110,10 @@
               ],
               "filter": {
                 "expression": "host.name = 'arariichi.org'"
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
               },
               "groupBy": [],
               "having": {
@@ -128,7 +136,7 @@
       }
     },
     {
-      "id": "6b70bd57-f817-4164-9280-8a5c41ea14aa",
+      "id": "963a9547-972f-4848-9bb6-ce4ebee57e55",
       "title": "Memory used %",
       "description": "",
       "panelTypes": "value",
@@ -183,7 +191,7 @@
               "queryName": "A",
               "expression": "A",
               "dataSource": "metrics",
-              "disabled": false,
+              "disabled": true,
               "stepInterval": 60,
               "legend": "",
               "aggregations": [
@@ -198,6 +206,10 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org' AND state = 'used'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -210,7 +222,7 @@
               "queryName": "B",
               "expression": "B",
               "dataSource": "metrics",
-              "disabled": false,
+              "disabled": true,
               "stepInterval": 60,
               "legend": "",
               "aggregations": [
@@ -224,6 +236,10 @@
               ],
               "filter": {
                 "expression": "host.name = 'arariichi.org' AND state IN ('used', 'free', 'buffered', 'cached')"
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
               },
               "groupBy": [],
               "having": {
@@ -246,7 +262,7 @@
       }
     },
     {
-      "id": "6f2890f6-3576-43fd-b02c-701bb7c92d11",
+      "id": "ec7691c9-5c9e-4a81-b470-e891abfabe2e",
       "title": "Disk / used %",
       "description": "",
       "panelTypes": "value",
@@ -301,7 +317,7 @@
               "queryName": "A",
               "expression": "A",
               "dataSource": "metrics",
-              "disabled": false,
+              "disabled": true,
               "stepInterval": 60,
               "legend": "",
               "aggregations": [
@@ -316,6 +332,10 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org' AND mountpoint = '/' AND state = 'used'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -328,7 +348,7 @@
               "queryName": "B",
               "expression": "B",
               "dataSource": "metrics",
-              "disabled": false,
+              "disabled": true,
               "stepInterval": 60,
               "legend": "",
               "aggregations": [
@@ -342,6 +362,10 @@
               ],
               "filter": {
                 "expression": "host.name = 'arariichi.org' AND mountpoint = '/'"
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
               },
               "groupBy": [],
               "having": {
@@ -364,7 +388,7 @@
       }
     },
     {
-      "id": "4822506a-619f-4baa-90cb-c87f2a27825b",
+      "id": "c46a9ab1-7602-46f9-b9dc-9963c3d3bebe",
       "title": "Load 1m",
       "description": "",
       "panelTypes": "value",
@@ -434,6 +458,10 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -448,7 +476,7 @@
       }
     },
     {
-      "id": "56376b58-f43c-4b5d-b7d8-afd5230f6d19",
+      "id": "e7291e0c-05d7-44fb-bed6-27a45b693919",
       "title": "CPU by state (cores)",
       "description": "",
       "panelTypes": "graph",
@@ -518,9 +546,18 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org' AND state != 'idle'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "state"
+                  "key": "state",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "state--string--tag--false"
                 }
               ],
               "having": {
@@ -536,7 +573,7 @@
       }
     },
     {
-      "id": "60a65c19-1460-48ae-8b5f-8b9ad5b88e7a",
+      "id": "04c48458-05c5-4ed7-b013-57c7c3980d92",
       "title": "Load average 1m / 5m / 15m",
       "description": "",
       "panelTypes": "graph",
@@ -606,6 +643,10 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -632,6 +673,10 @@
               ],
               "filter": {
                 "expression": "host.name = 'arariichi.org'"
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
               },
               "groupBy": [],
               "having": {
@@ -660,6 +705,10 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -674,7 +723,7 @@
       }
     },
     {
-      "id": "e62a0005-0543-4cc3-a43f-74e69bf98a0b",
+      "id": "6295fc19-1517-48b0-a830-520272ea5500",
       "title": "Memory by state",
       "description": "",
       "panelTypes": "graph",
@@ -744,9 +793,18 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "state"
+                  "key": "state",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "state--string--tag--false"
                 }
               ],
               "having": {
@@ -762,7 +820,7 @@
       }
     },
     {
-      "id": "8086f72f-49f8-40d1-b5ad-b3ffa54c7925",
+      "id": "a51abf4f-8035-4a49-b665-ddb7e7514937",
       "title": "Container memory, all containers",
       "description": "",
       "panelTypes": "graph",
@@ -832,9 +890,18 @@
               "filter": {
                 "expression": ""
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "container.name"
+                  "key": "container.name",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "container.name--string--tag--false"
                 }
               ],
               "having": {
@@ -850,7 +917,7 @@
       }
     },
     {
-      "id": "9fb91e54-47bf-4a9f-a96c-42aebcc6e31e",
+      "id": "4525f99e-3a8b-4d5a-9dea-216322ea426e",
       "title": "Container CPU utilization",
       "description": "",
       "panelTypes": "graph",
@@ -920,9 +987,18 @@
               "filter": {
                 "expression": ""
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "container.name"
+                  "key": "container.name",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "container.name--string--tag--false"
                 }
               ],
               "having": {
@@ -938,7 +1014,7 @@
       }
     },
     {
-      "id": "3928da83-e113-4d1e-935d-8a73358f9468",
+      "id": "5517aebe-4cf4-416f-a91e-a9d70877a2fb",
       "title": "Filesystem used on /",
       "description": "",
       "panelTypes": "graph",
@@ -1008,9 +1084,18 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org' AND mountpoint = '/'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "state"
+                  "key": "state",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "state--string--tag--false"
                 }
               ],
               "having": {
@@ -1026,7 +1111,7 @@
       }
     },
     {
-      "id": "e1dd4da3-3145-4296-9afd-d7af81d639f4",
+      "id": "6e4babe2-164f-46c5-8692-05dabeaffa50",
       "title": "Network I/O (bytes/s)",
       "description": "",
       "panelTypes": "graph",
@@ -1096,9 +1181,18 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org' AND device != 'lo'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "direction"
+                  "key": "direction",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "direction--string--tag--false"
                 }
               ],
               "having": {
@@ -1114,7 +1208,7 @@
       }
     },
     {
-      "id": "c92a43ce-3f02-455d-9e75-96f9fe45d05a",
+      "id": "5a72be3a-9b72-4ce9-baaa-fdfcd639f6c1",
       "title": "Disk I/O (bytes/s)",
       "description": "",
       "panelTypes": "graph",
@@ -1184,9 +1278,18 @@
               "filter": {
                 "expression": "host.name = 'arariichi.org'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "direction"
+                  "key": "direction",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "direction--string--tag--false"
                 }
               ],
               "having": {
@@ -1204,7 +1307,7 @@
   ],
   "layout": [
     {
-      "i": "3ae1de98-599e-4a8c-837a-587c2085e06c",
+      "i": "2b25b2a2-2c64-4bdb-8989-a159ad8a0d62",
       "x": 0,
       "y": 0,
       "w": 3,
@@ -1215,7 +1318,7 @@
       "static": false
     },
     {
-      "i": "6b70bd57-f817-4164-9280-8a5c41ea14aa",
+      "i": "963a9547-972f-4848-9bb6-ce4ebee57e55",
       "x": 3,
       "y": 0,
       "w": 3,
@@ -1226,7 +1329,7 @@
       "static": false
     },
     {
-      "i": "6f2890f6-3576-43fd-b02c-701bb7c92d11",
+      "i": "ec7691c9-5c9e-4a81-b470-e891abfabe2e",
       "x": 6,
       "y": 0,
       "w": 3,
@@ -1237,7 +1340,7 @@
       "static": false
     },
     {
-      "i": "4822506a-619f-4baa-90cb-c87f2a27825b",
+      "i": "c46a9ab1-7602-46f9-b9dc-9963c3d3bebe",
       "x": 9,
       "y": 0,
       "w": 3,
@@ -1248,7 +1351,7 @@
       "static": false
     },
     {
-      "i": "56376b58-f43c-4b5d-b7d8-afd5230f6d19",
+      "i": "e7291e0c-05d7-44fb-bed6-27a45b693919",
       "x": 0,
       "y": 2,
       "w": 6,
@@ -1259,7 +1362,7 @@
       "static": false
     },
     {
-      "i": "60a65c19-1460-48ae-8b5f-8b9ad5b88e7a",
+      "i": "04c48458-05c5-4ed7-b013-57c7c3980d92",
       "x": 6,
       "y": 2,
       "w": 6,
@@ -1270,7 +1373,7 @@
       "static": false
     },
     {
-      "i": "e62a0005-0543-4cc3-a43f-74e69bf98a0b",
+      "i": "6295fc19-1517-48b0-a830-520272ea5500",
       "x": 0,
       "y": 5,
       "w": 6,
@@ -1281,7 +1384,7 @@
       "static": false
     },
     {
-      "i": "8086f72f-49f8-40d1-b5ad-b3ffa54c7925",
+      "i": "a51abf4f-8035-4a49-b665-ddb7e7514937",
       "x": 6,
       "y": 5,
       "w": 6,
@@ -1292,7 +1395,7 @@
       "static": false
     },
     {
-      "i": "9fb91e54-47bf-4a9f-a96c-42aebcc6e31e",
+      "i": "4525f99e-3a8b-4d5a-9dea-216322ea426e",
       "x": 0,
       "y": 8,
       "w": 6,
@@ -1303,7 +1406,7 @@
       "static": false
     },
     {
-      "i": "3928da83-e113-4d1e-935d-8a73358f9468",
+      "i": "5517aebe-4cf4-416f-a91e-a9d70877a2fb",
       "x": 6,
       "y": 8,
       "w": 6,
@@ -1314,7 +1417,7 @@
       "static": false
     },
     {
-      "i": "e1dd4da3-3145-4296-9afd-d7af81d639f4",
+      "i": "6e4babe2-164f-46c5-8692-05dabeaffa50",
       "x": 0,
       "y": 11,
       "w": 6,
@@ -1325,7 +1428,7 @@
       "static": false
     },
     {
-      "i": "c92a43ce-3f02-455d-9e75-96f9fe45d05a",
+      "i": "5a72be3a-9b72-4ce9-baaa-fdfcd639f6c1",
       "x": 6,
       "y": 11,
       "w": 6,

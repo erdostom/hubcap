@@ -10,7 +10,7 @@
   "variables": {},
   "widgets": [
     {
-      "id": "903693f9-221d-43b6-a9eb-80b6d07d367d",
+      "id": "87548a08-3df4-43b7-a83b-a8d343f60fe6",
       "title": "Requests / min",
       "description": "",
       "panelTypes": "value",
@@ -76,6 +76,10 @@
               "filter": {
                 "expression": "msg = 'Request'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -90,7 +94,7 @@
       }
     },
     {
-      "id": "545677fa-9e52-4d05-9a61-d0749ec9158a",
+      "id": "ec09f04e-da8a-4789-ab8d-c06f56b877e3",
       "title": "504s (upstream timeout)",
       "description": "",
       "panelTypes": "value",
@@ -103,7 +107,7 @@
       "softMax": null,
       "thresholds": [
         {
-          "index": "3f9cc4ef-6096-4a35-a1dd-a34870f73165",
+          "index": "5d17f98d-916e-40f5-99c7-af5b0418c8c6",
           "keyIndex": 0,
           "thresholdValue": 1,
           "thresholdColor": "Red",
@@ -165,6 +169,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND status = 504"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -179,7 +187,7 @@
       }
     },
     {
-      "id": "222a8f31-1803-4e01-93f9-91095e0f7c31",
+      "id": "59cc2146-c8f7-4385-8f36-16ae3d330b63",
       "title": "499s (client gave up)",
       "description": "",
       "panelTypes": "value",
@@ -245,6 +253,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND status = 499"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -259,7 +271,7 @@
       }
     },
     {
-      "id": "2a989b25-f330-4064-a3b7-84df8f17ebcb",
+      "id": "ec960f30-5272-47ff-9994-d23a84be0940",
       "title": "429s (throttled)",
       "description": "",
       "panelTypes": "value",
@@ -325,6 +337,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND status = 429"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -339,7 +355,7 @@
       }
     },
     {
-      "id": "9cad7dda-7c54-4de9-9df4-f6e34e1d2b47",
+      "id": "6609c535-2a9a-4e04-89fc-368ef4d3e2a0",
       "title": "Proxy p99 (excl /up, 429)",
       "description": "Includes time queued for a Puma thread, which app traces do not",
       "panelTypes": "value",
@@ -405,6 +421,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND path != '/up' AND status != 429"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -419,7 +439,7 @@
       }
     },
     {
-      "id": "3e38dafb-05e8-483b-a04f-3530ac99480c",
+      "id": "bb906615-0802-44fb-b812-9f1b4f5b3619",
       "title": "Distinct client IPs",
       "description": "",
       "panelTypes": "value",
@@ -485,6 +505,10 @@
               "filter": {
                 "expression": "msg = 'Request'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -499,7 +523,7 @@
       }
     },
     {
-      "id": "bb9d8c03-db64-4173-83e8-ab28c68824ff",
+      "id": "8c88da4d-a361-4cb4-a6e0-ee6433842e4d",
       "title": "Requests / min by status",
       "description": "",
       "panelTypes": "graph",
@@ -565,9 +589,18 @@
               "filter": {
                 "expression": "msg = 'Request'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "status"
+                  "key": "status",
+                  "dataType": "float64",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "status--float64--tag--false"
                 }
               ],
               "having": {
@@ -583,7 +616,7 @@
       }
     },
     {
-      "id": "9bd61242-1719-4d23-b12f-e3e9326e95f1",
+      "id": "743fedc1-53ab-4abe-9915-7c471e741b2c",
       "title": "Proxy latency p50 / p99 (excl /up, 429)",
       "description": "",
       "panelTypes": "graph",
@@ -649,6 +682,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND path != '/up' AND status != 429"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -672,6 +709,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND path != '/up' AND status != 429"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -686,7 +727,7 @@
       }
     },
     {
-      "id": "fe00c9b9-2038-4272-9987-50978f06a16c",
+      "id": "544134a5-5f29-4a6c-b678-0931e01db8b9",
       "title": "Requests by host",
       "description": "nariichi.org and portal.nariichi.org only ever 301 to arariichi.org",
       "panelTypes": "graph",
@@ -752,9 +793,18 @@
               "filter": {
                 "expression": "msg = 'Request'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "host"
+                  "key": "host",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "host--string--tag--false"
                 }
               ],
               "having": {
@@ -770,7 +820,7 @@
       }
     },
     {
-      "id": "0715b7a0-d520-4d4b-95b0-4c5f7d9757db",
+      "id": "6005da60-e7f6-4a32-b49d-c6bd67125098",
       "title": "Timeouts and aborts / min",
       "description": "",
       "panelTypes": "graph",
@@ -836,6 +886,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND status = 504"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -858,6 +912,10 @@
               ],
               "filter": {
                 "expression": "msg = 'Request' AND status = 499"
+              },
+              "filters": {
+                "items": [],
+                "op": "AND"
               },
               "groupBy": [],
               "having": {
@@ -882,6 +940,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND status >= 500 AND status != 504"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -896,7 +958,7 @@
       }
     },
     {
-      "id": "a83f6d00-b915-4024-81f6-725438a0f8f3",
+      "id": "6a1fd234-af3a-4697-8606-6de85eb8fc33",
       "title": "Top client IPs",
       "description": "The Alibaba fleet spreads ~1,500 addresses over 47.79.0.0/16; look at the first two octets",
       "panelTypes": "table",
@@ -962,9 +1024,18 @@
               "filter": {
                 "expression": "msg = 'Request'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "remote_addr"
+                  "key": "remote_addr",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "remote_addr--string--tag--false"
                 }
               ],
               "having": {
@@ -985,7 +1056,7 @@
       }
     },
     {
-      "id": "4c3fb04f-b5f8-4079-a001-2f044268bb2f",
+      "id": "bbf5dd4a-b608-4863-b599-8423abe1dd09",
       "title": "Top paths",
       "description": "",
       "panelTypes": "table",
@@ -1051,9 +1122,18 @@
               "filter": {
                 "expression": "msg = 'Request'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "path"
+                  "key": "path",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "path--string--tag--false"
                 }
               ],
               "having": {
@@ -1074,7 +1154,7 @@
       }
     },
     {
-      "id": "846987b1-4659-4913-89a5-b33635b1bbe6",
+      "id": "98371e27-73e4-46c8-b193-37d60ae739c5",
       "title": "Top user agents",
       "description": "",
       "panelTypes": "table",
@@ -1140,9 +1220,18 @@
               "filter": {
                 "expression": "msg = 'Request'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [
                 {
-                  "name": "req_user_agent"
+                  "key": "req_user_agent",
+                  "dataType": "string",
+                  "type": "tag",
+                  "isColumn": false,
+                  "isJSON": false,
+                  "id": "req_user_agent--string--tag--false"
                 }
               ],
               "having": {
@@ -1163,7 +1252,7 @@
       }
     },
     {
-      "id": "d57406d8-483a-4dff-93e3-b360014d2982",
+      "id": "73383be4-ef92-4efb-8670-8f519193ddf5",
       "title": "Rack::Attack throttle log lines / min",
       "description": "Emitted by the app for every 429; lines carry network=, ip= and path=",
       "panelTypes": "graph",
@@ -1229,6 +1318,10 @@
               "filter": {
                 "expression": "service.name = 'ara-webapp' AND body CONTAINS 'Rack::Attack throttled'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -1243,7 +1336,7 @@
       }
     },
     {
-      "id": "ad8b995b-c934-4503-befb-17b8677471b0",
+      "id": "73f013f8-124e-4fd0-a6ec-549d205c899b",
       "title": "Slowest proxy requests (> 5 s)",
       "description": "",
       "panelTypes": "list",
@@ -1309,6 +1402,10 @@
               "filter": {
                 "expression": "msg = 'Request' AND duration > 5000000000 AND path != '/up'"
               },
+              "filters": {
+                "items": [],
+                "op": "AND"
+              },
               "groupBy": [],
               "having": {
                 "expression": ""
@@ -1330,7 +1427,7 @@
   ],
   "layout": [
     {
-      "i": "903693f9-221d-43b6-a9eb-80b6d07d367d",
+      "i": "87548a08-3df4-43b7-a83b-a8d343f60fe6",
       "x": 0,
       "y": 0,
       "w": 2,
@@ -1341,7 +1438,7 @@
       "static": false
     },
     {
-      "i": "545677fa-9e52-4d05-9a61-d0749ec9158a",
+      "i": "ec09f04e-da8a-4789-ab8d-c06f56b877e3",
       "x": 2,
       "y": 0,
       "w": 2,
@@ -1352,7 +1449,7 @@
       "static": false
     },
     {
-      "i": "222a8f31-1803-4e01-93f9-91095e0f7c31",
+      "i": "59cc2146-c8f7-4385-8f36-16ae3d330b63",
       "x": 4,
       "y": 0,
       "w": 2,
@@ -1363,7 +1460,7 @@
       "static": false
     },
     {
-      "i": "2a989b25-f330-4064-a3b7-84df8f17ebcb",
+      "i": "ec960f30-5272-47ff-9994-d23a84be0940",
       "x": 6,
       "y": 0,
       "w": 2,
@@ -1374,7 +1471,7 @@
       "static": false
     },
     {
-      "i": "9cad7dda-7c54-4de9-9df4-f6e34e1d2b47",
+      "i": "6609c535-2a9a-4e04-89fc-368ef4d3e2a0",
       "x": 8,
       "y": 0,
       "w": 2,
@@ -1385,7 +1482,7 @@
       "static": false
     },
     {
-      "i": "3e38dafb-05e8-483b-a04f-3530ac99480c",
+      "i": "bb906615-0802-44fb-b812-9f1b4f5b3619",
       "x": 10,
       "y": 0,
       "w": 2,
@@ -1396,7 +1493,7 @@
       "static": false
     },
     {
-      "i": "bb9d8c03-db64-4173-83e8-ab28c68824ff",
+      "i": "8c88da4d-a361-4cb4-a6e0-ee6433842e4d",
       "x": 0,
       "y": 2,
       "w": 6,
@@ -1407,7 +1504,7 @@
       "static": false
     },
     {
-      "i": "9bd61242-1719-4d23-b12f-e3e9326e95f1",
+      "i": "743fedc1-53ab-4abe-9915-7c471e741b2c",
       "x": 6,
       "y": 2,
       "w": 6,
@@ -1418,7 +1515,7 @@
       "static": false
     },
     {
-      "i": "fe00c9b9-2038-4272-9987-50978f06a16c",
+      "i": "544134a5-5f29-4a6c-b678-0931e01db8b9",
       "x": 0,
       "y": 5,
       "w": 6,
@@ -1429,7 +1526,7 @@
       "static": false
     },
     {
-      "i": "0715b7a0-d520-4d4b-95b0-4c5f7d9757db",
+      "i": "6005da60-e7f6-4a32-b49d-c6bd67125098",
       "x": 6,
       "y": 5,
       "w": 6,
@@ -1440,7 +1537,7 @@
       "static": false
     },
     {
-      "i": "a83f6d00-b915-4024-81f6-725438a0f8f3",
+      "i": "6a1fd234-af3a-4697-8606-6de85eb8fc33",
       "x": 0,
       "y": 8,
       "w": 4,
@@ -1451,7 +1548,7 @@
       "static": false
     },
     {
-      "i": "4c3fb04f-b5f8-4079-a001-2f044268bb2f",
+      "i": "bbf5dd4a-b608-4863-b599-8423abe1dd09",
       "x": 4,
       "y": 8,
       "w": 4,
@@ -1462,7 +1559,7 @@
       "static": false
     },
     {
-      "i": "846987b1-4659-4913-89a5-b33635b1bbe6",
+      "i": "98371e27-73e4-46c8-b193-37d60ae739c5",
       "x": 8,
       "y": 8,
       "w": 4,
@@ -1473,7 +1570,7 @@
       "static": false
     },
     {
-      "i": "d57406d8-483a-4dff-93e3-b360014d2982",
+      "i": "73383be4-ef92-4efb-8670-8f519193ddf5",
       "x": 0,
       "y": 11,
       "w": 6,
@@ -1484,7 +1581,7 @@
       "static": false
     },
     {
-      "i": "ad8b995b-c934-4503-befb-17b8677471b0",
+      "i": "73f013f8-124e-4fd0-a6ec-549d205c899b",
       "x": 6,
       "y": 11,
       "w": 6,
