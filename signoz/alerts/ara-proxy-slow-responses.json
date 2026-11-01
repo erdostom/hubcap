@@ -1,0 +1,78 @@
+{
+  "alert": "ara proxy: slow responses (p99 > 5s)",
+  "alertType": "LOGS_BASED_ALERT",
+  "schemaVersion": "v2alpha1",
+  "version": "v5",
+  "ruleType": "threshold_rule",
+  "labels": {
+    "severity": "warning",
+    "service": "ara-webapp",
+    "source": "kamal-proxy"
+  },
+  "annotations": {
+    "summary": "arariichi.org is slow at the proxy",
+    "description": "p99 time to serve a request as measured by kamal-proxy (queueing included, /up and throttled 429s excluded) was {{$value}} over the last 5 minutes, with at least 20 requests. The app's own p95 rule does not see time spent waiting for a Puma thread; this one does."
+  },
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "logs",
+            "stepInterval": "5m",
+            "aggregations": [
+              {
+                "expression": "p99(duration)"
+              },
+              {
+                "expression": "count()"
+              }
+            ],
+            "filter": {
+              "expression": "msg = 'Request' AND path != '/up' AND status != 429"
+            },
+            "having": {
+              "expression": "count() >= 20"
+            }
+          }
+        }
+      ]
+    },
+    "selectedQueryName": "A",
+    "thresholds": {
+      "kind": "basic",
+      "spec": [
+        {
+          "name": "warning",
+          "target": 5000000000,
+          "targetUnit": "ns",
+          "matchType": "at_least_once",
+          "op": "above",
+          "channels": [
+            "discord-alerts"
+          ]
+        }
+      ]
+    }
+  },
+  "evaluation": {
+    "kind": "rolling",
+    "spec": {
+      "evalWindow": "5m",
+      "frequency": "1m"
+    }
+  },
+  "notificationSettings": {
+    "renotify": {
+      "enabled": true,
+      "interval": "1h",
+      "alertStates": [
+        "firing"
+      ]
+    }
+  }
+}
