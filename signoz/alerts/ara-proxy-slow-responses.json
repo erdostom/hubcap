@@ -11,7 +11,7 @@
   },
   "annotations": {
     "summary": "arariichi.org is slow at the proxy",
-    "description": "p99 time to serve a request as measured by kamal-proxy (queueing included, /up and throttled 429s excluded) was {{$value}} over the last 5 minutes, with at least 20 requests. The app's own p95 rule does not see time spent waiting for a Puma thread; this one does."
+    "description": "p99 time to serve a request as measured by kamal-proxy (queueing included, /up and throttled 429s excluded) was {{$value}} ns over the last 5 minutes, with at least 20 requests. The app's own p95 rule does not see time spent waiting for a Puma thread; this one does."
   },
   "condition": {
     "compositeQuery": {
@@ -49,7 +49,7 @@
         {
           "name": "warning",
           "target": 5000000000,
-          "targetUnit": "ns",
+          "targetUnit": "",
           "matchType": "at_least_once",
           "op": "above",
           "channels": [
