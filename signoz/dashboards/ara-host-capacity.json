@@ -1,0 +1,1339 @@
+{
+  "title": "ARA host capacity",
+  "description": "The VPS (2 vCPUs) that runs production, staging, kamal-proxy and the collectors. hostmetrics receiver + docker_stats.",
+  "tags": [
+    "ara",
+    "host",
+    "capacity"
+  ],
+  "version": "v5",
+  "variables": {},
+  "widgets": [
+    {
+      "id": "3ae1de98-599e-4a8c-837a-587c2085e06c",
+      "title": "CPU busy %",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "percent",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.time",
+                  "timeAggregation": "rate",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org' AND state != 'idle'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.time",
+                  "timeAggregation": "rate",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": [
+            {
+              "queryName": "F1",
+              "expression": "A * 100 / B",
+              "legend": "",
+              "disabled": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6b70bd57-f817-4164-9280-8a5c41ea14aa",
+      "title": "Memory used %",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "percent",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "metricName": "system.memory.usage",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org' AND state = 'used'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "metricName": "system.memory.usage",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org' AND state IN ('used', 'free', 'buffered', 'cached')"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": [
+            {
+              "queryName": "F1",
+              "expression": "A * 100 / B",
+              "legend": "",
+              "disabled": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "6f2890f6-3576-43fd-b02c-701bb7c92d11",
+      "title": "Disk / used %",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "percent",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "metricName": "system.filesystem.usage",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org' AND mountpoint = '/' AND state = 'used'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "metricName": "system.filesystem.usage",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org' AND mountpoint = '/'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": [
+            {
+              "queryName": "F1",
+              "expression": "A * 100 / B",
+              "legend": "",
+              "disabled": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "4822506a-619f-4baa-90cb-c87f2a27825b",
+      "title": "Load 1m",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.load_average.1m",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "avg",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "56376b58-f43c-4b5d-b7d8-afd5230f6d19",
+      "title": "CPU by state (cores)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": true,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{state}}",
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.time",
+                  "timeAggregation": "rate",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org' AND state != 'idle'"
+              },
+              "groupBy": [
+                {
+                  "name": "state"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "60a65c19-1460-48ae-8b5f-8b9ad5b88e7a",
+      "title": "Load average 1m / 5m / 15m",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "1m",
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.load_average.1m",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "avg",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "5m",
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.load_average.5m",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "avg",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "C",
+              "expression": "C",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "15m",
+              "aggregations": [
+                {
+                  "metricName": "system.cpu.load_average.15m",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "avg",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "e62a0005-0543-4cc3-a43f-74e69bf98a0b",
+      "title": "Memory by state",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": true,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{state}}",
+              "aggregations": [
+                {
+                  "metricName": "system.memory.usage",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org'"
+              },
+              "groupBy": [
+                {
+                  "name": "state"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "8086f72f-49f8-40d1-b5ad-b3ffa54c7925",
+      "title": "Container memory, all containers",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{container.name}}",
+              "aggregations": [
+                {
+                  "metricName": "container.memory.usage.total",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "name": "container.name"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "9fb91e54-47bf-4a9f-a96c-42aebcc6e31e",
+      "title": "Container CPU utilization",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "percent",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{container.name}}",
+              "aggregations": [
+                {
+                  "metricName": "container.cpu.utilization",
+                  "timeAggregation": "avg",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": ""
+              },
+              "groupBy": [
+                {
+                  "name": "container.name"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "3928da83-e113-4d1e-935d-8a73358f9468",
+      "title": "Filesystem used on /",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "bytes",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": true,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{state}}",
+              "aggregations": [
+                {
+                  "metricName": "system.filesystem.usage",
+                  "timeAggregation": "latest",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org' AND mountpoint = '/'"
+              },
+              "groupBy": [
+                {
+                  "name": "state"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "e1dd4da3-3145-4296-9afd-d7af81d639f4",
+      "title": "Network I/O (bytes/s)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "Bps",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{direction}}",
+              "aggregations": [
+                {
+                  "metricName": "system.network.io",
+                  "timeAggregation": "rate",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org' AND device != 'lo'"
+              },
+              "groupBy": [
+                {
+                  "name": "direction"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "c92a43ce-3f02-455d-9e75-96f9fe45d05a",
+      "title": "Disk I/O (bytes/s)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "Bps",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "metrics",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{direction}}",
+              "aggregations": [
+                {
+                  "metricName": "system.disk.io",
+                  "timeAggregation": "rate",
+                  "spaceAggregation": "sum",
+                  "reduceTo": "avg",
+                  "temporality": null
+                }
+              ],
+              "filter": {
+                "expression": "host.name = 'arariichi.org'"
+              },
+              "groupBy": [
+                {
+                  "name": "direction"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "3ae1de98-599e-4a8c-837a-587c2085e06c",
+      "x": 0,
+      "y": 0,
+      "w": 3,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "6b70bd57-f817-4164-9280-8a5c41ea14aa",
+      "x": 3,
+      "y": 0,
+      "w": 3,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "6f2890f6-3576-43fd-b02c-701bb7c92d11",
+      "x": 6,
+      "y": 0,
+      "w": 3,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "4822506a-619f-4baa-90cb-c87f2a27825b",
+      "x": 9,
+      "y": 0,
+      "w": 3,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "56376b58-f43c-4b5d-b7d8-afd5230f6d19",
+      "x": 0,
+      "y": 2,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "60a65c19-1460-48ae-8b5f-8b9ad5b88e7a",
+      "x": 6,
+      "y": 2,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "e62a0005-0543-4cc3-a43f-74e69bf98a0b",
+      "x": 0,
+      "y": 5,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "8086f72f-49f8-40d1-b5ad-b3ffa54c7925",
+      "x": 6,
+      "y": 5,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "9fb91e54-47bf-4a9f-a96c-42aebcc6e31e",
+      "x": 0,
+      "y": 8,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "3928da83-e113-4d1e-935d-8a73358f9468",
+      "x": 6,
+      "y": 8,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "e1dd4da3-3145-4296-9afd-d7af81d639f4",
+      "x": 0,
+      "y": 11,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "c92a43ce-3f02-455d-9e75-96f9fe45d05a",
+      "x": 6,
+      "y": 11,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    }
+  ]
+}

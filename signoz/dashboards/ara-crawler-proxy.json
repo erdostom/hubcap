@@ -1,0 +1,1498 @@
+{
+  "title": "ARA crawler & proxy",
+  "description": "kamal-proxy access logs (shipped by fluent-bit). This is where the next bot shows up first: the proxy sees every request including the ones Rack::Attack refuses and the ones that never reach Rails because Puma is saturated (504 after the 10 s target timeout, 499 when the client gives up).",
+  "tags": [
+    "ara",
+    "proxy",
+    "crawler"
+  ],
+  "version": "v5",
+  "variables": {},
+  "widgets": [
+    {
+      "id": "903693f9-221d-43b6-a9eb-80b6d07d367d",
+      "title": "Requests / min",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "545677fa-9e52-4d05-9a61-d0749ec9158a",
+      "title": "504s (upstream timeout)",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [
+        {
+          "index": "3f9cc4ef-6096-4a35-a1dd-a34870f73165",
+          "keyIndex": 0,
+          "thresholdValue": 1,
+          "thresholdColor": "Red",
+          "thresholdFormat": "Text",
+          "thresholdUnit": "none"
+        }
+      ],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND status = 504"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "222a8f31-1803-4e01-93f9-91095e0f7c31",
+      "title": "499s (client gave up)",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND status = 499"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "2a989b25-f330-4064-a3b7-84df8f17ebcb",
+      "title": "429s (throttled)",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND status = 429"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "9cad7dda-7c54-4de9-9df4-f6e34e1d2b47",
+      "title": "Proxy p99 (excl /up, 429)",
+      "description": "Includes time queued for a Puma thread, which app traces do not",
+      "panelTypes": "value",
+      "yAxisUnit": "ns",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "p99(duration)"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND path != '/up' AND status != 429"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "3e38dafb-05e8-483b-a04f-3530ac99480c",
+      "title": "Distinct client IPs",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count_distinct(remote_addr)"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "bb9d8c03-db64-4173-83e8-ab28c68824ff",
+      "title": "Requests / min by status",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": true,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{status}}",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request'"
+              },
+              "groupBy": [
+                {
+                  "name": "status"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "9bd61242-1719-4d23-b12f-e3e9326e95f1",
+      "title": "Proxy latency p50 / p99 (excl /up, 429)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "ns",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "p50",
+              "aggregations": [
+                {
+                  "expression": "p50(duration)"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND path != '/up' AND status != 429"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "p99",
+              "aggregations": [
+                {
+                  "expression": "p99(duration)"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND path != '/up' AND status != 429"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "fe00c9b9-2038-4272-9987-50978f06a16c",
+      "title": "Requests by host",
+      "description": "nariichi.org and portal.nariichi.org only ever 301 to arariichi.org",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": true,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{host}}",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request'"
+              },
+              "groupBy": [
+                {
+                  "name": "host"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "0715b7a0-d520-4d4b-95b0-4c5f7d9757db",
+      "title": "Timeouts and aborts / min",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "504",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND status = 504"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "499",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND status = 499"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "C",
+              "expression": "C",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "other 5xx",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND status >= 500 AND status != 504"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "a83f6d00-b915-4024-81f6-725438a0f8f3",
+      "title": "Top client IPs",
+      "description": "The Alibaba fleet spreads ~1,500 addresses over 47.79.0.0/16; look at the first two octets",
+      "panelTypes": "table",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request'"
+              },
+              "groupBy": [
+                {
+                  "name": "remote_addr"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [
+                {
+                  "columnName": "count()",
+                  "order": "desc"
+                }
+              ],
+              "limit": 20,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "4c3fb04f-b5f8-4079-a001-2f044268bb2f",
+      "title": "Top paths",
+      "description": "",
+      "panelTypes": "table",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request'"
+              },
+              "groupBy": [
+                {
+                  "name": "path"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [
+                {
+                  "columnName": "count()",
+                  "order": "desc"
+                }
+              ],
+              "limit": 20,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "846987b1-4659-4913-89a5-b33635b1bbe6",
+      "title": "Top user agents",
+      "description": "",
+      "panelTypes": "table",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request'"
+              },
+              "groupBy": [
+                {
+                  "name": "req_user_agent"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [
+                {
+                  "columnName": "count()",
+                  "order": "desc"
+                }
+              ],
+              "limit": 20,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "d57406d8-483a-4dff-93e3-b360014d2982",
+      "title": "Rack::Attack throttle log lines / min",
+      "description": "Emitted by the app for every 429; lines carry network=, ip= and path=",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "throttled",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND body CONTAINS 'Rack::Attack throttled'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "ad8b995b-c934-4503-befb-17b8677471b0",
+      "title": "Slowest proxy requests (> 5 s)",
+      "description": "",
+      "panelTypes": "list",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "logs",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "msg = 'Request' AND duration > 5000000000 AND path != '/up'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [
+                {
+                  "columnName": "timestamp",
+                  "order": "desc"
+                }
+              ],
+              "limit": 50,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "903693f9-221d-43b6-a9eb-80b6d07d367d",
+      "x": 0,
+      "y": 0,
+      "w": 2,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "545677fa-9e52-4d05-9a61-d0749ec9158a",
+      "x": 2,
+      "y": 0,
+      "w": 2,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "222a8f31-1803-4e01-93f9-91095e0f7c31",
+      "x": 4,
+      "y": 0,
+      "w": 2,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "2a989b25-f330-4064-a3b7-84df8f17ebcb",
+      "x": 6,
+      "y": 0,
+      "w": 2,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "9cad7dda-7c54-4de9-9df4-f6e34e1d2b47",
+      "x": 8,
+      "y": 0,
+      "w": 2,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "3e38dafb-05e8-483b-a04f-3530ac99480c",
+      "x": 10,
+      "y": 0,
+      "w": 2,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "bb9d8c03-db64-4173-83e8-ab28c68824ff",
+      "x": 0,
+      "y": 2,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "9bd61242-1719-4d23-b12f-e3e9326e95f1",
+      "x": 6,
+      "y": 2,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "fe00c9b9-2038-4272-9987-50978f06a16c",
+      "x": 0,
+      "y": 5,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "0715b7a0-d520-4d4b-95b0-4c5f7d9757db",
+      "x": 6,
+      "y": 5,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "a83f6d00-b915-4024-81f6-725438a0f8f3",
+      "x": 0,
+      "y": 8,
+      "w": 4,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "4c3fb04f-b5f8-4079-a001-2f044268bb2f",
+      "x": 4,
+      "y": 8,
+      "w": 4,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "846987b1-4659-4913-89a5-b33635b1bbe6",
+      "x": 8,
+      "y": 8,
+      "w": 4,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "d57406d8-483a-4dff-93e3-b360014d2982",
+      "x": 0,
+      "y": 11,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "ad8b995b-c934-4503-befb-17b8677471b0",
+      "x": 6,
+      "y": 11,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    }
+  ]
+}

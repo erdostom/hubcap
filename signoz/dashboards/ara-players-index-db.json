@@ -1,0 +1,1385 @@
+{
+  "title": "ARA players index & DB",
+  "description": "Guards the 2026-11-01 fixes: /users used to run ~1,000 ScoringCycle (or EventRegistration) queries per request and load every player twice. If the per-request query counts here climb back towards the hundreds, an N+1 came back.",
+  "tags": [
+    "ara",
+    "database",
+    "users"
+  ],
+  "version": "v5",
+  "variables": {},
+  "widgets": [
+    {
+      "id": "2c1b8399-213c-4d19-96ab-f2d7fde21323",
+      "title": "/users 200s / min",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users' AND response_status_code = '200'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "e8a8f845-ae79-4515-985c-0e3199f263aa",
+      "title": "/users p95 (200s)",
+      "description": "",
+      "panelTypes": "value",
+      "yAxisUnit": "ns",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users' AND response_status_code = '200'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "acf0c110-3b03-4f88-8499-0123ce41866f",
+      "title": "ScoringCycle queries per /users 200",
+      "description": "Was ~1,000; should be ~1",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND name = 'ScoringCycle query'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users' AND response_status_code = '200'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": [
+            {
+              "queryName": "F1",
+              "expression": "A / B",
+              "legend": "",
+              "disabled": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "c57d4b7a-09e2-4253-858c-7ab969079e8b",
+      "title": "EventRegistration queries per /users 200",
+      "description": "Was ~1,000 for cycle=2025",
+      "panelTypes": "value",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND name = 'EventRegistration query'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users' AND response_status_code = '200'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": [
+            {
+              "queryName": "F1",
+              "expression": "A / B",
+              "legend": "",
+              "disabled": false
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "8f2bc023-954a-4b0b-b24d-1237265e9855",
+      "title": "/users latency p50 / p95 / p99 (200s)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "ns",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "p50",
+              "aggregations": [
+                {
+                  "expression": "p50(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users' AND response_status_code = '200'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "p95",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users' AND response_status_code = '200'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "C",
+              "expression": "C",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "p99",
+              "aggregations": [
+                {
+                  "expression": "p99(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users' AND response_status_code = '200'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "299cca65-4bc2-46bd-99d7-be298cb1ced0",
+      "title": "/users responses by status",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": true,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{response_status_code}}",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users'"
+              },
+              "groupBy": [
+                {
+                  "name": "response_status_code"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "ccea5422-7a07-4632-8b78-f3565ac07db2",
+      "title": "ActiveRecord query spans / min by model",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": true,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{name}}",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Internal' AND name CONTAINS ' query'"
+              },
+              "groupBy": [
+                {
+                  "name": "name"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [
+                {
+                  "columnName": "count()",
+                  "order": "desc"
+                }
+              ],
+              "limit": 12,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "0e1e8b24-7135-4b16-b52f-27fc6336fb7e",
+      "title": "ActiveRecord query time / min by model (sum)",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "ns",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": true,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "{{name}}",
+              "aggregations": [
+                {
+                  "expression": "sum(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Internal' AND name CONTAINS ' query'"
+              },
+              "groupBy": [
+                {
+                  "name": "name"
+                }
+              ],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [
+                {
+                  "columnName": "sum(duration_nano)",
+                  "order": "desc"
+                }
+              ],
+              "limit": 12,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "6d619fe0-ba27-435e-ab02-13f3f014e069",
+      "title": "Slowest routes by p95 (min 5 requests)",
+      "description": "",
+      "panelTypes": "table",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                },
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND response_status_code != '429'"
+              },
+              "groupBy": [
+                {
+                  "name": "http.route"
+                }
+              ],
+              "having": {
+                "expression": "count() >= 5"
+              },
+              "orderBy": [
+                {
+                  "columnName": "p95(duration_nano)",
+                  "order": "desc"
+                }
+              ],
+              "limit": 15,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "d96eb1ef-719b-403a-b810-cf676105d868",
+      "title": "Render time: layout / template / partial p95",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "ns",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "layout",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND name = 'render_layout.action_view'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "template",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND name = 'render_template.action_view'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "C",
+              "expression": "C",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "partial",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND name = 'render_partial.action_view'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "e9e90fe9-9142-44eb-a070-cfdcde6ec97b",
+      "title": "Solid Queue polling (ReadyExecution queries / min)",
+      "description": "Workers poll every 1 s since 2026-11-01 (was 0.1 s)",
+      "panelTypes": "graph",
+      "yAxisUnit": "none",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "prod",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND name = 'SolidQueue::ReadyExecution query'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "staging",
+              "aggregations": [
+                {
+                  "expression": "count()"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp-staging' AND name = 'SolidQueue::ReadyExecution query'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    },
+    {
+      "id": "3d3c38c6-cbb2-446b-8812-f25f7475487a",
+      "title": "Home, events, clubs p95",
+      "description": "",
+      "panelTypes": "graph",
+      "yAxisUnit": "ns",
+      "nullZeroValues": "zero",
+      "opacity": "1",
+      "isStacked": false,
+      "fillSpans": false,
+      "softMin": null,
+      "softMax": null,
+      "thresholds": [],
+      "timePreferance": "GLOBAL_TIME",
+      "bucketCount": 30,
+      "bucketWidth": 0,
+      "columnUnits": {},
+      "mergeAllActiveQueries": false,
+      "stackedBarChart": false,
+      "selectedLogFields": [
+        {
+          "dataType": "string",
+          "name": "body",
+          "type": ""
+        },
+        {
+          "dataType": "string",
+          "name": "timestamp",
+          "type": ""
+        }
+      ],
+      "selectedTracesFields": [],
+      "query": {
+        "queryType": "builder",
+        "promql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "clickhouse_sql": [
+          {
+            "name": "A",
+            "query": "",
+            "legend": "",
+            "disabled": false
+          }
+        ],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "expression": "A",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "/",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "B",
+              "expression": "B",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "/events",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/events'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "C",
+              "expression": "C",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "/clubs/:id",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/clubs/:id'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            },
+            {
+              "queryName": "D",
+              "expression": "D",
+              "dataSource": "traces",
+              "disabled": false,
+              "stepInterval": 60,
+              "legend": "/users/:id",
+              "aggregations": [
+                {
+                  "expression": "p95(duration_nano)"
+                }
+              ],
+              "filter": {
+                "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route = '/users/:id'"
+              },
+              "groupBy": [],
+              "having": {
+                "expression": ""
+              },
+              "orderBy": [],
+              "limit": null,
+              "functions": []
+            }
+          ],
+          "queryFormulas": []
+        }
+      }
+    }
+  ],
+  "layout": [
+    {
+      "i": "2c1b8399-213c-4d19-96ab-f2d7fde21323",
+      "x": 0,
+      "y": 0,
+      "w": 3,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "e8a8f845-ae79-4515-985c-0e3199f263aa",
+      "x": 3,
+      "y": 0,
+      "w": 3,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "acf0c110-3b03-4f88-8499-0123ce41866f",
+      "x": 6,
+      "y": 0,
+      "w": 3,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "c57d4b7a-09e2-4253-858c-7ab969079e8b",
+      "x": 9,
+      "y": 0,
+      "w": 3,
+      "h": 2,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "8f2bc023-954a-4b0b-b24d-1237265e9855",
+      "x": 0,
+      "y": 2,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "299cca65-4bc2-46bd-99d7-be298cb1ced0",
+      "x": 6,
+      "y": 2,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "ccea5422-7a07-4632-8b78-f3565ac07db2",
+      "x": 0,
+      "y": 5,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "0e1e8b24-7135-4b16-b52f-27fc6336fb7e",
+      "x": 6,
+      "y": 5,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "6d619fe0-ba27-435e-ab02-13f3f014e069",
+      "x": 0,
+      "y": 8,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "d96eb1ef-719b-403a-b810-cf676105d868",
+      "x": 6,
+      "y": 8,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "e9e90fe9-9142-44eb-a070-cfdcde6ec97b",
+      "x": 0,
+      "y": 11,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "3d3c38c6-cbb2-446b-8812-f25f7475487a",
+      "x": 6,
+      "y": 11,
+      "w": 6,
+      "h": 3,
+      "minW": 1,
+      "minH": 1,
+      "moved": false,
+      "static": false
+    }
+  ]
+}

@@ -351,12 +351,41 @@ Log into `https://<GLITCHTIP_DOMAIN>`, create a project, and copy the DSN into `
 - **SigNoz** → Logs Explorer — filter by `service.name = my-rails-app`
 - **GlitchTip** — trigger a test exception and confirm it appears
 
+## Dashboards
+
+Four ARA dashboards are versioned in [`signoz/dashboards/`](signoz/dashboards/)
+as SigNoz dashboard JSON (query builder v5, SigNoz ≥ 0.120) and pushed with
+[`signoz/dashboards/apply.py`](signoz/dashboards/apply.py), which upserts by
+title (an existing dashboard keeps its id and URL):
+
+```bash
+SIGNOZ_URL=https://signoz.example.com SIGNOZ_API_KEY=<editor key> signoz/dashboards/apply.py [--dry-run] [FILE...]
+```
+
+| Dashboard | Source | Answers |
+|---|---|---|
+| **ARA production overview** | traces (`service.name = ara-webapp`), hostmetrics, docker_stats | Is prod OK right now: req/min by status class, p50/p95/p99, 5xx %, 429s, top routes by count and total time, host CPU/load/memory, container memory, jobs, outbound calls |
+| **ARA crawler & proxy** | kamal-proxy access logs | Who is hitting the site: req/min by status and host, 504/499/429 counts, proxy p99 (includes Puma queueing), top client IPs, paths and user agents, Rack::Attack throttle lines, slowest requests |
+| **ARA players index & DB** | traces | Guards the `/users` N+1 fixes: query spans per `/users` request by model, `/users` latency and status mix, ActiveRecord query spans and time by model, render times, Solid Queue polling, other key routes' p95 |
+| **ARA host capacity** | hostmetrics, docker_stats | CPU by state, load, memory by state, disk, network and disk I/O, every container's memory and CPU |
+
+To change a panel: edit the JSON and re-run `apply.py`, or edit in the UI, export
+(dashboard menu → Export JSON) and paste the exported `data` object over the file.
+Changes made only in the UI are overwritten by the next apply.
+
 ## Alerting → Discord
 
 Alert rules are versioned in [`signoz/alerts/`](signoz/alerts/) as SigNoz rule
 JSON (schema `v2alpha1`, query builder `v5`, works on SigNoz ≥ 0.120) and pushed
 with [`signoz/alerts/apply.py`](signoz/alerts/apply.py). SigNoz does the
 metric/latency/host alerting; GlitchTip does per-exception and uptime alerting.
+
+The `ara-webapp: *` rules are trace-based and only see requests that reached
+Rails. The `ara proxy: *` rules are logs-based on the kamal-proxy access log and
+catch what a saturated app never reports: 504s (proxy target timeout, > 20 in
+5 min), 499s (client gave up, > 50 in 5 min), p99 at the proxy including time
+queued for a Puma thread (> 5 s with ≥ 20 requests) and 5xx from the proxy
+itself (> 10 in 5 min, other than 504).
 Both post to the same Discord channel through webhooks — no bot needed.
 
 ### 1. Discord webhook

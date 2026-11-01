@@ -1,0 +1,72 @@
+{
+  "alert": "ara proxy: clients giving up (499)",
+  "alertType": "LOGS_BASED_ALERT",
+  "schemaVersion": "v2alpha1",
+  "version": "v5",
+  "ruleType": "threshold_rule",
+  "labels": {
+    "severity": "warning",
+    "service": "ara-webapp",
+    "source": "kamal-proxy"
+  },
+  "annotations": {
+    "summary": "arariichi.org responses are slow enough that clients disconnect",
+    "description": "{{$value}} requests in the last 5 minutes were closed by the client before kamal-proxy had a response (499). This precedes 504s when the app is saturated. Check the ARA crawler & proxy dashboard."
+  },
+  "condition": {
+    "compositeQuery": {
+      "queryType": "builder",
+      "panelType": "graph",
+      "queries": [
+        {
+          "type": "builder_query",
+          "spec": {
+            "name": "A",
+            "signal": "logs",
+            "stepInterval": "5m",
+            "aggregations": [
+              {
+                "expression": "count()"
+              }
+            ],
+            "filter": {
+              "expression": "msg = 'Request' AND status = 499"
+            }
+          }
+        }
+      ]
+    },
+    "selectedQueryName": "A",
+    "thresholds": {
+      "kind": "basic",
+      "spec": [
+        {
+          "name": "warning",
+          "target": 50,
+          "targetUnit": "",
+          "matchType": "at_least_once",
+          "op": "above",
+          "channels": [
+            "discord-alerts"
+          ]
+        }
+      ]
+    }
+  },
+  "evaluation": {
+    "kind": "rolling",
+    "spec": {
+      "evalWindow": "5m",
+      "frequency": "1m"
+    }
+  },
+  "notificationSettings": {
+    "renotify": {
+      "enabled": true,
+      "interval": "1h",
+      "alertStates": [
+        "firing"
+      ]
+    }
+  }
+}
