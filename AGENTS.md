@@ -113,6 +113,9 @@ hubcap/
     ├── dashboards/
     │   ├── *.json                        # dashboards (SigNoz dashboard JSON, query builder v5)
     │   └── apply.py                      # upserts the dashboards by title via the SigNoz API
+    ├── views/
+    │   ├── *.json                        # explorer saved views (logs / traces), query builder v5
+    │   └── apply.py                      # upserts the views by name via the SigNoz API
     └── clickhouse/
         ├── config.xml                    # ClickHouse server config
         ├── users.xml                     # ClickHouse users/quotas

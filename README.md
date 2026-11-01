@@ -369,6 +369,16 @@ SIGNOZ_URL=https://signoz.example.com SIGNOZ_API_KEY=<editor key> signoz/dashboa
 | **ARA players index & DB** | traces | Guards the `/users` N+1 fixes: query spans per `/users` request by model, `/users` latency and status mix, ActiveRecord query spans and time by model, render times, Solid Queue polling, other key routes' p95 |
 | **ARA host capacity** | hostmetrics, docker_stats | CPU by state, load, memory by state, disk, network and disk I/O, every container's memory and CPU |
 
+### Saved views
+
+[`signoz/views/`](signoz/views/) holds explorer saved views (Logs and Traces
+explorer → Views menu, also listed on the SigNoz Home page), pushed with
+[`signoz/views/apply.py`](signoz/views/apply.py) (upsert by name). They are
+the one-click starting points for an incident: proxy timeouts and aborts,
+proxy 5xx, slow proxy requests, `/users` traffic that got through, Rack::Attack
+throttles, container warnings and errors, prod slow / failed / throttled
+requests, background jobs, outbound calls, staging requests.
+
 To change a panel: edit the JSON and re-run `apply.py`, or edit in the UI, export
 (dashboard menu → Export JSON) and paste the exported `data` object over the file.
 Changes made only in the UI are overwritten by the next apply.
