@@ -1,0 +1,34 @@
+{
+  "name": "App: Rack::Attack throttles (network, ip, path)",
+  "category": "",
+  "sourcePage": "logs",
+  "tags": [
+    "ara"
+  ],
+  "compositeQuery": {
+    "queryType": "builder",
+    "panelType": "list",
+    "queries": [
+      {
+        "type": "builder_query",
+        "spec": {
+          "name": "A",
+          "signal": "logs",
+          "filter": {
+            "expression": "body CONTAINS 'Rack::Attack throttled'"
+          },
+          "limit": 100,
+          "order": [
+            {
+              "key": {
+                "name": "timestamp"
+              },
+              "direction": "desc"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "extraData": "{\"color\": \"#4E9BFF\"}"
+}

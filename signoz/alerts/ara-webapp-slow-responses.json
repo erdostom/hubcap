@@ -10,7 +10,7 @@
   },
   "annotations": {
     "summary": "nariichi.org is slow",
-    "description": "p95 response time for ara-webapp was over 2s across the last 10 minutes (with at least 20 requests in the window). Check SigNoz \u2192 Services \u2192 ara-webapp for the slow endpoints and DB calls."
+    "description": "p95 response time for ara-webapp was over 2s across the last 10 minutes (with at least 10 requests in the window). Check SigNoz → Services → ara-webapp for the slow endpoints and DB calls."
   },
   "condition": {
     "compositeQuery": {
@@ -35,7 +35,7 @@
               "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND http.route != '/up'"
             },
             "having": {
-              "expression": "count() >= 20"
+              "expression": "count() >= 10"
             }
           }
         }

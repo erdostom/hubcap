@@ -1,0 +1,34 @@
+{
+  "name": "Prod: outbound HTTP calls (Sentry, mail, APIs)",
+  "category": "",
+  "sourcePage": "traces",
+  "tags": [
+    "ara"
+  ],
+  "compositeQuery": {
+    "queryType": "builder",
+    "panelType": "list",
+    "queries": [
+      {
+        "type": "builder_query",
+        "spec": {
+          "name": "A",
+          "signal": "traces",
+          "filter": {
+            "expression": "service.name = 'ara-webapp' AND kind_string = 'Client'"
+          },
+          "limit": 100,
+          "order": [
+            {
+              "key": {
+                "name": "timestamp"
+              },
+              "direction": "desc"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "extraData": "{\"color\": \"#30A46C\"}"
+}

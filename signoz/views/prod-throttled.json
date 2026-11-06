@@ -1,0 +1,34 @@
+{
+  "name": "Prod: throttled requests (429)",
+  "category": "",
+  "sourcePage": "traces",
+  "tags": [
+    "ara"
+  ],
+  "compositeQuery": {
+    "queryType": "builder",
+    "panelType": "list",
+    "queries": [
+      {
+        "type": "builder_query",
+        "spec": {
+          "name": "A",
+          "signal": "traces",
+          "filter": {
+            "expression": "service.name = 'ara-webapp' AND kind_string = 'Server' AND response_status_code = '429'"
+          },
+          "limit": 100,
+          "order": [
+            {
+              "key": {
+                "name": "timestamp"
+              },
+              "direction": "desc"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  "extraData": "{\"color\": \"#4E9BFF\"}"
+}
