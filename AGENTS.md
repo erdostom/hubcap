@@ -69,7 +69,7 @@ Rails Apps
 
 - SigNoz alert rules for metric-based alerts (error rate, p95 latency, failed jobs, disk/memory) → Discord via a Slack-type channel pointed at `https://discord.com/api/webhooks/<id>/<token>/slack`
 - Rules live as code in `signoz/alerts/*.json` and are pushed with `signoz/alerts/apply.py` (upsert by rule name via `POST/PUT /api/v2/rules`)
-- Trace-based rules only see requests that reached Rails. The `ara proxy: *` rules are logs-based on the kamal-proxy access log (`msg = 'Request'`, numeric `status` and `duration` attributes) and catch what a saturated app never reports: 504 (proxy target timeout), 499 (client gave up), slow p99 including queueing, and 5xx from the proxy itself
+- Trace-based rules only see requests that reached Rails. The `ara proxy: *` rules are logs-based on the kamal-proxy access log (`msg = 'Request'`, numeric `status` and `duration` attributes) and catch what a saturated app never reports: 504 (proxy target timeout), 499 (client gave up) and 5xx from the proxy itself. There is no proxy p99 rule on purpose (too noisy; the app-level p95 > 2s rule covers sustained slowness)
 - Dashboards live as code in `signoz/dashboards/*.json` and are pushed with `signoz/dashboards/apply.py` (upsert by title via `POST/PUT /api/v1/dashboards`). Edit the JSON (or export from the UI and paste the `data` object back), never only the UI, or the next apply overwrites the change
 - GlitchTip for per-exception alerts (new issues, regressions) and uptime monitors → Discord via its native Discord recipient
 - See README.md → "Alerting → Discord" for setup

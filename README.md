@@ -393,9 +393,13 @@ metric/latency/host alerting; GlitchTip does per-exception and uptime alerting.
 The `ara-webapp: *` rules are trace-based and only see requests that reached
 Rails. The `ara proxy: *` rules are logs-based on the kamal-proxy access log and
 catch what a saturated app never reports: 504s (proxy target timeout, > 20 in
-5 min), 499s (client gave up, > 50 in 5 min), p99 at the proxy including time
-queued for a Puma thread (> 5 s with ≥ 20 requests) and 5xx from the proxy
-itself (> 10 in 5 min, other than 504).
+5 min), 499s (client gave up, > 50 in 5 min) and 5xx from the proxy itself
+(> 10 in 5 min, other than 504). There is deliberately no proxy-side p99
+latency rule: it was too noisy (a handful of slow crawler requests tripped
+it), and sustained slowness is already caught by the app-level
+`ara-webapp: slow responses (p95 > 2s)` rule. Because `apply.py` never deletes,
+the old `ara proxy: slow responses (p99 > 5s)` rule may still exist in SigNoz
+as a disabled rule; delete it from the UI if it bothers you.
 Both post to the same Discord channel through webhooks — no bot needed.
 
 ### 1. Discord webhook
