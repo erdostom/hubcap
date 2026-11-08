@@ -25,16 +25,19 @@ service: hubcap
 # Placeholder image: nothing is ever built or deployed from this config, but
 # Kamal requires the key. Bump it alongside the SigNoz accessory image when
 # upgrading.
-image: signoz/signoz:v0.120.0
-
-# Unused (nothing is built), but Kamal requires a builder with an arch.
+# we only deploy accessories this param is required, setting a dummy value
+image: unused
+#
+## Unused (nothing is built), but Kamal requires a builder with an arch.
 builder:
   arch: [ amd64 ]
 
 # EDIT: the Hubcap server (SSH host/IP), plus the three domains below.
 # All domains must have DNS A records pointing at this server before first
 # boot — kamal-proxy provisions Let's Encrypt certificates for them.
-x-server: &server 203.0.113.10
+# CHANGE THIS TO THE REAL IP, this is my test servers IP
+x-server: &server 2.29.136.77
+
 
 servers:
   - *server
@@ -93,8 +96,8 @@ accessories:
       - signoz/clickhouse-init.sh:/hubcap/clickhouse-init.sh:ro
     volumes:
       - signoz_clickhouse_user_scripts:/var/lib/clickhouse/user_scripts/
-    options:
-      restart: "on-failure"
+#    options:
+#      restart: "on-failure"
 
   # One-shot: creates the ClickHouse schema for SigNoz. Retries (via Docker
   # restart-on-failure) until ClickHouse is up.
@@ -104,7 +107,7 @@ accessories:
     host: *server
     options:
       entrypoint: /bin/sh
-      restart: "on-failure"
+#      restart: "on-failure"
     cmd: '-c "/signoz-otel-collector migrate bootstrap && /signoz-otel-collector migrate sync up && /signoz-otel-collector migrate async up"'
     env:
       clear:
@@ -231,8 +234,8 @@ accessories:
     service: glitchtip-migrate
     image: glitchtip/glitchtip:6
     host: *server
-    options:
-      restart: "no"
+#    options:
+#      restart: "no"
     cmd: 'sh -c "until ./manage.py migrate --noinput; do echo waiting for database; sleep 5; done"'
     env:
       secret:
