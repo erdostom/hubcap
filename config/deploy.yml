@@ -268,7 +268,8 @@ accessories:
         - SECRET_KEY
         - GLITCHTIP_EMAIL_URL
     proxy:
-      host: glitchtip.example.com
+      # CHANGE THIS TO THE ACTUAL HOST
+      host: glithctip.hubcap.lsepsi.hu
       app_port: 8080
       ssl: true
       response_timeout: 120
