@@ -150,7 +150,7 @@ accessories:
     volumes:
       - signoz_sqlite:/var/lib/signoz/
     proxy:
-      host: signoz.example.com
+      host: signoz.hubcap.lsepsi.hu
       app_port: 8080
       ssl: true
       response_timeout: 120
