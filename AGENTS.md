@@ -99,12 +99,12 @@ Only kamal-proxy gets public-facing ports (80/443). The OTel Collector port (431
 hubcap/
 ├── AGENTS.md
 ├── config/
-│   └── deploy.yml                       # Kamal configuration (all containers as accessories)
+│   └── deploy.yml                       # plain YAML: clear settings, domains, accessories
 ├── .kamal/
 │   ├── secrets                          # Git-safe 1Password references
 │   └── fetch-secrets.rb                 # fetches fields and derives the database URL
 ├── docker-compose.yml                   # legacy compose setup (reference)
-├── .env.example                         # clear settings; copy to the gitignored .env
+├── .env.example                         # clear settings for legacy Docker Compose only
 ├── caddy/
 │   ├── Caddyfile                        # reverse proxy config for the legacy compose setup
 │   └── otel-gateway.Caddyfile           # OTLP TLS gateway (used by the Kamal otel-gateway accessory)

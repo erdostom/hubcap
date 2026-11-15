@@ -26,20 +26,20 @@ gem install kamal        # 2.x; requires Ruby 3.1+ locally
 
 ### 1. Configure
 
-Copy the clear configuration and fill in the server, domains, registry username,
-and service settings:
+Edit the clear settings directly in **`config/deploy.yml`**: server address,
+registry username, accessory `env.clear` values, and `proxy.host` domains.
+The deployment file is plain YAML.
 
-```bash
-cp .env.example .env
-```
-
-Kamal loads `.env` without overriding variables already exported in your shell.
 Keep private values in **1Password**. Install the [1Password CLI](https://developer.1password.com/docs/cli/)
 and enable its desktop-app integration or sign in to your account.
 
-The default settings select account `my.1password.com`, vault **`hubcap`**, and
-item **`deployment`**. These identifiers are configured by `OP_ACCOUNT`,
-`OP_VAULT`, and `OP_ITEM` in `.env`.
+The `x-1password` block selects the account and vault/item:
+
+```yaml
+x-1password:
+  account: my.1password.com
+  from: hubcap/deployment
+```
 
 Create the item with these five concealed fields, using the names exactly:
 
@@ -58,13 +58,15 @@ a suitable signing secret or database password.
 
 The Git-safe `.kamal/secrets` contains references only. Its helper fetches the
 five fields once using Kamal's 1Password adapter and derives `DATABASE_URL` from
-`POSTGRES_PASSWORD`, URL-encoding the credentials. The registry username belongs
-in `.env`; email credentials are injected as `EMAIL_URL` for both GlitchTip web
+`POSTGRES_PASSWORD`, URL-encoding the credentials. The helper reads the database
+user and name from the PostgreSQL accessory's `env.clear` settings. Email
+credentials are injected as `EMAIL_URL` for both GlitchTip web
 and worker containers.
 
-All three domains (`SIGNOZ_DOMAIN`, `GLITCHTIP_DOMAIN`, `OTEL_DOMAIN`) must have
-DNS A records pointing at `HUBCAP_HOST` before first boot — kamal-proxy provisions
-Let's Encrypt certificates automatically.
+All accessory `proxy.host` domains must have DNS A records pointing at `x-server`
+before first boot — kamal-proxy provisions Let's Encrypt certificates automatically.
+Keep GlitchTip's `GLITCHTIP_DOMAIN` URL in both web and worker `env.clear` settings
+aligned with its public proxy hostname.
 
 Run the offline configuration check, which uses a mock 1Password CLI:
 
@@ -82,7 +84,7 @@ kamal accessory boot all  # boots every container, in the order defined in confi
 
 Boot order (as defined in `config/deploy.yml`): zookeeper → clickhouse-init (one-shot) → clickhouse → clickhouse-migrator (one-shot, runs the SigNoz schema migrations) → signoz → otel-collector → otel-gateway → glitchtip-db → glitchtip-redis → glitchtip-migrate → glitchtip-web → glitchtip-worker. Every one-shot and long-running container retries until its dependencies are ready, so a slow start self-heals.
 
-Visit `https://<SIGNOZ_DOMAIN>` and create your SigNoz admin account, then `https://<GLITCHTIP_DOMAIN>` and set up GlitchTip. `GLITCHTIP_ENABLE_REGISTRATION` and `GLITCHTIP_ENABLE_ORG_CREATION` in `.env` start as `true` for initial setup — flip both to `false` afterwards and run `kamal accessory reboot glitchtip-web`.
+Visit the SigNoz and GlitchTip proxy domains to create your accounts. `ENABLE_USER_REGISTRATION` and `ENABLE_ORGANIZATION_CREATION` under `glitchtip-web.env.clear` start as `"true"` for initial setup — set both to `"false"` afterwards and run `kamal accessory reboot glitchtip-web`.
 
 Firewall port 4318 to only accept connections from your Rails app servers. No other ports besides 80/443 need to be public.
 
@@ -105,11 +107,11 @@ Bumping an image version: edit the `image:` in `config/deploy.yml`, then `kamal 
 1. Back up volumes on the old server (ClickHouse, `signoz_sqlite`, `glitchtip_db_data`) with `docker run --rm -v <vol>:/data -v $PWD:/backup alpine tar czf /backup/<vol>.tgz /data`.
 2. Boot the new server per the steps above (fresh server — no volume migration needed).
 3. Create the GlitchTip projects again and point the Rails apps' `SENTRY_DSN` at the new DSNs. The `OTEL_EXPORTER_OTLP_ENDPOINT` (`https://<OTEL_DOMAIN>`) and FluentBit config need no changes.
-4. Once the new server is verified, retire the old one. The legacy reference files are `docker-compose.yml` and `caddy/Caddyfile`; `.env.example` is shared configuration for Hubcap.
+4. Once the new server is verified, retire the old one. The legacy reference files are `docker-compose.yml`, `.env.example`, and `caddy/Caddyfile`.
 
-The legacy Compose file uses the same clear settings and secret names. To run
-it with secrets fetched from 1Password, pass the resolved values through the
-process environment:
+The legacy Compose file uses clear settings from `.env` (copy `.env.example`)
+and the same secret names as Kamal. To run it with secrets fetched from
+1Password, pass the resolved values through the process environment:
 
 ```bash
 ruby -rkamal -e '
