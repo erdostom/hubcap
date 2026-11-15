@@ -101,9 +101,10 @@ hubcap/
 ├── config/
 │   └── deploy.yml                       # Kamal configuration (all containers as accessories)
 ├── .kamal/
-│   └── secrets.example                  # template for .kamal/secrets (domains, secrets)
+│   ├── secrets                          # Git-safe 1Password references
+│   └── fetch-secrets.rb                 # fetches fields and derives the database URL
 ├── docker-compose.yml                   # legacy compose setup (reference)
-├── .env.example                         # env vars for the legacy compose setup
+├── .env.example                         # clear settings; copy to the gitignored .env
 ├── caddy/
 │   ├── Caddyfile                        # reverse proxy config for the legacy compose setup
 │   └── otel-gateway.Caddyfile           # OTLP TLS gateway (used by the Kamal otel-gateway accessory)

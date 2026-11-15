@@ -11,14 +11,16 @@
 # and the OTLP ingestion domain.
 #
 # First-time setup:
-#   cp .kamal/secrets.example .kamal/secrets   # then fill it in
-#   kamal docker setup                         # install Docker on the server
+#   cp .env.example .env                       # then fill in clear settings
+#   # Create the 1Password fields listed in README.md.
+#   kamal server bootstrap                     # install Docker on the server
 #   kamal proxy boot                           # start kamal-proxy (80/443)
 #   kamal accessory boot all                   # boots every container in order
 #
-# Edit the EDIT-ME values below (server host, domains) and the secrets file
-# before first boot.
+# Clear settings come from .env; .kamal/secrets fetches private values from 1Password.
 # =============================================================================
+
+<% require "dotenv"; require "json"; Dotenv.load(".env") %>
 
 service: hubcap
 
@@ -32,25 +34,23 @@ image: unused
 builder:
   arch: [ amd64 ]
 
-# EDIT: the Hubcap server (SSH host/IP), plus the three domains below.
-# All domains must have DNS A records pointing at this server before first
+# All domains in .env must have DNS A records pointing at this server before first
 # boot — kamal-proxy provisions Let's Encrypt certificates for them.
-# CHANGE THIS TO THE REAL IP, this is my test servers IP
-x-server: &server 2.29.136.77
+x-server: &server <%= ENV.fetch("HUBCAP_HOST").to_json %>
 
 
 servers:
   - *server
 
-# Docker Hub credentials (array form reads from .kamal/secrets). All Hubcap
+# The registry token is fetched by .kamal/secrets. All Hubcap
 # images are public, but a (free) account avoids anonymous pull rate limits.
 registry:
-  server: docker.io
-  username: [KAMAL_REGISTRY_USERNAME]
+  server: <%= ENV.fetch("KAMAL_REGISTRY_SERVER").to_json %>
+  username: <%= ENV.fetch("KAMAL_REGISTRY_USERNAME").to_json %>
   password: [KAMAL_REGISTRY_PASSWORD]
 
 ssh:
-  user: <%= ENV.fetch("HUBCAP_SSH_USER", "root") %>
+  user: <%= ENV.fetch("HUBCAP_SSH_USER").to_json %>
 
 # Allow generous time for first boots (ClickHouse migrations are slow).
 deploy_timeout: 300
@@ -76,11 +76,11 @@ accessories:
     host: *server
     env:
       clear:
-        ZOO_SERVER_ID: "1"
-        ALLOW_ANONYMOUS_LOGIN: "yes"
-        ZOO_AUTOPURGE_INTERVAL: "1"
-        ZOO_ENABLE_PROMETHEUS_METRICS: "yes"
-        ZOO_PROMETHEUS_METRICS_PORT_NUMBER: "9141"
+        ZOO_SERVER_ID: <%= ENV.fetch("ZOO_SERVER_ID").to_json %>
+        ALLOW_ANONYMOUS_LOGIN: <%= ENV.fetch("ALLOW_ANONYMOUS_LOGIN").to_json %>
+        ZOO_AUTOPURGE_INTERVAL: <%= ENV.fetch("ZOO_AUTOPURGE_INTERVAL").to_json %>
+        ZOO_ENABLE_PROMETHEUS_METRICS: <%= ENV.fetch("ZOO_ENABLE_PROMETHEUS_METRICS").to_json %>
+        ZOO_PROMETHEUS_METRICS_PORT_NUMBER: <%= ENV.fetch("ZOO_PROMETHEUS_METRICS_PORT_NUMBER").to_json %>
     volumes:
       - signoz_zookeeper:/bitnami/zookeeper
 
@@ -111,10 +111,10 @@ accessories:
     cmd: '-c "/signoz-otel-collector migrate bootstrap && /signoz-otel-collector migrate sync up && /signoz-otel-collector migrate async up"'
     env:
       clear:
-        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN: tcp://signoz-clickhouse:9000
-        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER: cluster
-        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION: "true"
-        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_TIMEOUT: 10m
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN: <%= ENV.fetch("SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN").to_json %>
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER: <%= ENV.fetch("SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER").to_json %>
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION: <%= ENV.fetch("SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION").to_json %>
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_TIMEOUT: <%= ENV.fetch("SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_TIMEOUT").to_json %>
 
   signoz-clickhouse:
     service: signoz-clickhouse
@@ -142,15 +142,15 @@ accessories:
     host: *server
     env:
       clear:
-        SIGNOZ_ALERTMANAGER_PROVIDER: signoz
-        SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN: tcp://signoz-clickhouse:9000
-        SIGNOZ_SQLSTORE_SQLITE_PATH: /var/lib/signoz/signoz.db
+        SIGNOZ_ALERTMANAGER_PROVIDER: <%= ENV.fetch("SIGNOZ_ALERTMANAGER_PROVIDER").to_json %>
+        SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN: <%= ENV.fetch("SIGNOZ_TELEMETRYSTORE_CLICKHOUSE_DSN").to_json %>
+        SIGNOZ_SQLSTORE_SQLITE_PATH: <%= ENV.fetch("SIGNOZ_SQLSTORE_SQLITE_PATH").to_json %>
       secret:
         - SIGNOZ_TOKENIZER_JWT_SECRET
     volumes:
       - signoz_sqlite:/var/lib/signoz/
     proxy:
-      host: signoz.hubcap.lsepsi.hu
+      host: <%= ENV.fetch("SIGNOZ_DOMAIN").to_json %>
       app_port: 8080
       ssl: true
       response_timeout: 120
@@ -178,12 +178,12 @@ accessories:
     cmd: '-c "/signoz-otel-collector migrate sync check && exec /signoz-otel-collector --config=/etc/otel-collector-config.yaml --manager-config=/etc/manager-config.yaml --copy-path=/var/tmp/collector-config.yaml"'
     env:
       clear:
-        OTEL_RESOURCE_ATTRIBUTES: host.name=hubcap,os.type=linux
-        LOW_CARDINAL_EXCEPTION_GROUPING: "false"
-        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN: tcp://signoz-clickhouse:9000
-        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER: cluster
-        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION: "true"
-        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_TIMEOUT: 10m
+        OTEL_RESOURCE_ATTRIBUTES: <%= ENV.fetch("OTEL_RESOURCE_ATTRIBUTES").to_json %>
+        LOW_CARDINAL_EXCEPTION_GROUPING: <%= ENV.fetch("LOW_CARDINAL_EXCEPTION_GROUPING").to_json %>
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN: <%= ENV.fetch("SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_DSN").to_json %>
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER: <%= ENV.fetch("SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_CLUSTER").to_json %>
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION: <%= ENV.fetch("SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_REPLICATION").to_json %>
+        SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_TIMEOUT: <%= ENV.fetch("SIGNOZ_OTEL_COLLECTOR_CLICKHOUSE_TIMEOUT").to_json %>
 
   # TLS frontend for OTLP ingestion. kamal-proxy terminates TLS for
   # OTEL_DOMAIN on 443 and forwards to this Caddy accessory, which proxies
@@ -197,7 +197,7 @@ accessories:
     files:
       - caddy/otel-gateway.Caddyfile:/etc/caddy/Caddyfile:ro
     proxy:
-      host: otel.example.com
+      host: <%= ENV.fetch("OTEL_DOMAIN").to_json %>
       app_port: 80
       ssl: true
       response_timeout: 120
@@ -215,8 +215,8 @@ accessories:
     host: *server
     env:
       clear:
-        POSTGRES_USER: glitchtip
-        POSTGRES_DB: glitchtip
+        POSTGRES_USER: <%= ENV.fetch("GLITCHTIP_DB_USER").to_json %>
+        POSTGRES_DB: <%= ENV.fetch("GLITCHTIP_DB_NAME").to_json %>
       secret:
         - POSTGRES_PASSWORD
     volumes:
@@ -257,18 +257,18 @@ accessories:
       --disable-write-exception --listen=128
     env:
       clear:
-        GLITCHTIP_DOMAIN: https://glitchtip.hubcap.lsepsi.hu
-        DEFAULT_FROM_EMAIL: noreply@example.com
-        REDIS_URL: redis://glitchtip-redis:6379/0
-        CELERY_WORKER_AUTOSCALE: "1,3"
-        ENABLE_ORGANIZATION_CREATION: "true"
-        ENABLE_USER_REGISTRATION: "true"
+        GLITCHTIP_DOMAIN: <%= "https://#{ENV.fetch('GLITCHTIP_DOMAIN')}".to_json %>
+        DEFAULT_FROM_EMAIL: <%= ENV.fetch("GLITCHTIP_FROM_EMAIL").to_json %>
+        REDIS_URL: <%= ENV.fetch("GLITCHTIP_REDIS_URL").to_json %>
+        CELERY_WORKER_AUTOSCALE: <%= ENV.fetch("CELERY_WORKER_AUTOSCALE").to_json %>
+        ENABLE_ORGANIZATION_CREATION: <%= ENV.fetch("GLITCHTIP_ENABLE_ORG_CREATION").to_json %>
+        ENABLE_USER_REGISTRATION: <%= ENV.fetch("GLITCHTIP_ENABLE_REGISTRATION").to_json %>
       secret:
         - DATABASE_URL
         - SECRET_KEY
-        - GLITCHTIP_EMAIL_URL
+        - EMAIL_URL:GLITCHTIP_EMAIL_URL
     proxy:
-      host: glitchtip.hubcap.lsepsi.hu
+      host: <%= ENV.fetch("GLITCHTIP_DOMAIN").to_json %>
       app_port: 8080
       ssl: true
       response_timeout: 120
@@ -284,9 +284,11 @@ accessories:
     cmd: ./bin/run-celery-with-beat.sh
     env:
       clear:
-        GLITCHTIP_DOMAIN: https://glitchtip.hubcap.lsepsi.hu
-        REDIS_URL: redis://glitchtip-redis:6379/0
-        CELERY_WORKER_AUTOSCALE: "1,3"
+        GLITCHTIP_DOMAIN: <%= "https://#{ENV.fetch('GLITCHTIP_DOMAIN')}".to_json %>
+        DEFAULT_FROM_EMAIL: <%= ENV.fetch("GLITCHTIP_FROM_EMAIL").to_json %>
+        REDIS_URL: <%= ENV.fetch("GLITCHTIP_REDIS_URL").to_json %>
+        CELERY_WORKER_AUTOSCALE: <%= ENV.fetch("CELERY_WORKER_AUTOSCALE").to_json %>
       secret:
         - DATABASE_URL
         - SECRET_KEY
+        - EMAIL_URL:GLITCHTIP_EMAIL_URL

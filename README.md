@@ -26,27 +26,63 @@ gem install kamal        # 2.x; requires Ruby 3.1+ locally
 
 ### 1. Configure
 
-Edit the server host and the three domains at the top of `config/deploy.yml`, then:
+Copy the clear configuration and fill in the server, domains, registry username,
+and service settings:
 
 ```bash
-cp .kamal/secrets.example .kamal/secrets
-# fill in .kamal/secrets — at minimum: KAMAL_REGISTRY_USERNAME/PASSWORD,
-#   SIGNOZ_TOKENIZER_JWT_SECRET, SECRET_KEY, DATABASE_URL, POSTGRES_PASSWORD
+cp .env.example .env
 ```
 
-All three domains (`signoz.example.com`, `glitchtip.example.com`, `otel.example.com`) must have DNS A records pointing at the server before first boot — kamal-proxy provisions Let's Encrypt certificates automatically.
+Kamal loads `.env` without overriding variables already exported in your shell.
+Keep private values in **1Password**. Install the [1Password CLI](https://developer.1password.com/docs/cli/)
+and enable its desktop-app integration or sign in to your account.
+
+The default settings select account `my.1password.com`, vault **`hubcap`**, and
+item **`deployment`**. These identifiers are configured by `OP_ACCOUNT`,
+`OP_VAULT`, and `OP_ITEM` in `.env`.
+
+Create the item with these five concealed fields, using the names exactly:
+
+| Field | Value |
+|---|---|
+| `KAMAL_REGISTRY_PASSWORD` | Docker Hub access token |
+| `SIGNOZ_TOKENIZER_JWT_SECRET` | SigNoz JWT signing secret |
+| `SECRET_KEY` | GlitchTip's Django signing secret |
+| `POSTGRES_PASSWORD` | GlitchTip PostgreSQL password |
+| `GLITCHTIP_EMAIL_URL` | SMTP URL, or `consolemail://` for email written to container logs |
+
+For the existing deployment, copy the current values from the gitignored
+`.kamal/secrets.local` migration copy. Remove that copy after importing and
+verifying the secrets. For a fresh deployment, `openssl rand -hex 32` generates
+a suitable signing secret or database password.
+
+The Git-safe `.kamal/secrets` contains references only. Its helper fetches the
+five fields once using Kamal's 1Password adapter and derives `DATABASE_URL` from
+`POSTGRES_PASSWORD`, URL-encoding the credentials. The registry username belongs
+in `.env`; email credentials are injected as `EMAIL_URL` for both GlitchTip web
+and worker containers.
+
+All three domains (`SIGNOZ_DOMAIN`, `GLITCHTIP_DOMAIN`, `OTEL_DOMAIN`) must have
+DNS A records pointing at `HUBCAP_HOST` before first boot — kamal-proxy provisions
+Let's Encrypt certificates automatically.
+
+Run the offline configuration check, which uses a mock 1Password CLI:
+
+```bash
+ruby test/configuration_test.rb
+```
 
 ### 2. Boot
 
 ```bash
-kamal docker setup        # once — installs Docker on the server
+kamal server bootstrap    # once — installs Docker on the server
 kamal proxy boot          # starts kamal-proxy on ports 80/443
 kamal accessory boot all  # boots every container, in the order defined in config/deploy.yml
 ```
 
 Boot order (as defined in `config/deploy.yml`): zookeeper → clickhouse-init (one-shot) → clickhouse → clickhouse-migrator (one-shot, runs the SigNoz schema migrations) → signoz → otel-collector → otel-gateway → glitchtip-db → glitchtip-redis → glitchtip-migrate → glitchtip-web → glitchtip-worker. Every one-shot and long-running container retries until its dependencies are ready, so a slow start self-heals.
 
-Visit `https://<SIGNOZ_DOMAIN>` and create your SigNoz admin account, then `https://<GLITCHTIP_DOMAIN>` and set up GlitchTip (the `ENABLE_USER_REGISTRATION` / `ENABLE_ORGANIZATION_CREATION` flags in `config/deploy.yml` start as `true` for initial setup — flip both to `false` afterwards and run `kamal accessory reboot glitchtip-web`).
+Visit `https://<SIGNOZ_DOMAIN>` and create your SigNoz admin account, then `https://<GLITCHTIP_DOMAIN>` and set up GlitchTip. `GLITCHTIP_ENABLE_REGISTRATION` and `GLITCHTIP_ENABLE_ORG_CREATION` in `.env` start as `true` for initial setup — flip both to `false` afterwards and run `kamal accessory reboot glitchtip-web`.
 
 Firewall port 4318 to only accept connections from your Rails app servers. No other ports besides 80/443 need to be public.
 
@@ -69,7 +105,21 @@ Bumping an image version: edit the `image:` in `config/deploy.yml`, then `kamal 
 1. Back up volumes on the old server (ClickHouse, `signoz_sqlite`, `glitchtip_db_data`) with `docker run --rm -v <vol>:/data -v $PWD:/backup alpine tar czf /backup/<vol>.tgz /data`.
 2. Boot the new server per the steps above (fresh server — no volume migration needed).
 3. Create the GlitchTip projects again and point the Rails apps' `SENTRY_DSN` at the new DSNs. The `OTEL_EXPORTER_OTLP_ENDPOINT` (`https://<OTEL_DOMAIN>`) and FluentBit config need no changes.
-4. Once the new server is verified, retire the old one — then delete `docker-compose.yml`, `.env.example` and the legacy `caddy/Caddyfile`.
+4. Once the new server is verified, retire the old one. The legacy reference files are `docker-compose.yml` and `caddy/Caddyfile`; `.env.example` is shared configuration for Hubcap.
+
+The legacy Compose file uses the same clear settings and secret names. To run
+it with secrets fetched from 1Password, pass the resolved values through the
+process environment:
+
+```bash
+ruby -rkamal -e '
+  config = Kamal::Configuration.create_from(config_file: Pathname.new("config/deploy.yml"))
+  %w[SIGNOZ_TOKENIZER_JWT_SECRET SECRET_KEY POSTGRES_PASSWORD DATABASE_URL GLITCHTIP_EMAIL_URL].each do |key|
+    ENV[key] = config.secrets[key]
+  end
+  exec("docker", "compose", *ARGV)
+' -- up -d
+```
 
 ## Adding a Rails App
 
