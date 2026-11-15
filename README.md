@@ -33,15 +33,9 @@ The deployment file is plain YAML.
 Keep private values in **1Password**. Install the [1Password CLI](https://developer.1password.com/docs/cli/)
 and enable its desktop-app integration or sign in to your account.
 
-The `x-1password` block selects the account and vault/item:
-
-```yaml
-x-1password:
-  account: my.1password.com
-  from: hubcap/deployment
-```
-
-Create the item with these five concealed fields, using the names exactly:
+The `kamal secrets fetch` command in **`.kamal/secrets`** selects account
+`my.1password.com` and vault/item **`hubcap/deployment`**. Create the item with
+these six concealed fields, using the names exactly:
 
 | Field | Value |
 |---|---|
@@ -49,19 +43,21 @@ Create the item with these five concealed fields, using the names exactly:
 | `SIGNOZ_TOKENIZER_JWT_SECRET` | SigNoz JWT signing secret |
 | `SECRET_KEY` | GlitchTip's Django signing secret |
 | `POSTGRES_PASSWORD` | GlitchTip PostgreSQL password |
+| `DATABASE_URL` | `postgres://glitchtip:<POSTGRES_PASSWORD>@glitchtip-db:5432/glitchtip` |
 | `GLITCHTIP_EMAIL_URL` | SMTP URL, or `consolemail://` for email written to container logs |
+
+In `DATABASE_URL`, replace `<POSTGRES_PASSWORD>` with the same password stored
+in `POSTGRES_PASSWORD`, percent-encoding URL-special characters. Its user and
+database name must match the PostgreSQL accessory's `env.clear` settings.
 
 For the existing deployment, copy the current values from the gitignored
 `.kamal/secrets.local` migration copy. Remove that copy after importing and
 verifying the secrets. For a fresh deployment, `openssl rand -hex 32` generates
 a suitable signing secret or database password.
 
-The Git-safe `.kamal/secrets` contains references only. Its helper fetches the
-five fields once using Kamal's 1Password adapter and derives `DATABASE_URL` from
-`POSTGRES_PASSWORD`, URL-encoding the credentials. The helper reads the database
-user and name from the PostgreSQL accessory's `env.clear` settings. Email
-credentials are injected as `EMAIL_URL` for both GlitchTip web
-and worker containers.
+The Git-safe `.kamal/secrets` uses Kamal's native `secrets fetch` and
+`secrets extract` commands. Email credentials are injected as `EMAIL_URL` for
+both GlitchTip web and worker containers.
 
 All accessory `proxy.host` domains must have DNS A records pointing at `x-server`
 before first boot — kamal-proxy provisions Let's Encrypt certificates automatically.

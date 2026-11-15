@@ -36,11 +36,6 @@ builder:
 # boot — kamal-proxy provisions Let's Encrypt certificates for them.
 x-server: &server 2.29.136.77
 
-# Read by .kamal/fetch-secrets.rb; these are identifiers, not secret values.
-x-1password:
-  account: my.1password.com
-  from: hubcap/deployment
-
 servers:
   - *server
 

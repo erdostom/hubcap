@@ -101,8 +101,7 @@ hubcap/
 ├── config/
 │   └── deploy.yml                       # plain YAML: clear settings, domains, accessories
 ├── .kamal/
-│   ├── secrets                          # Git-safe 1Password references
-│   └── fetch-secrets.rb                 # fetches fields and derives the database URL
+│   └── secrets                          # Git-safe native Kamal 1Password fetch/extract
 ├── docker-compose.yml                   # legacy compose setup (reference)
 ├── .env.example                         # clear settings for legacy Docker Compose only
 ├── caddy/
