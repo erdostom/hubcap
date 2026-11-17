@@ -194,7 +194,7 @@ accessories:
     files:
       - caddy/otel-gateway.Caddyfile:/etc/caddy/Caddyfile:ro
     proxy:
-      host: otel.example.com
+      host: otel.signoz.hubcap.lsepsi.hu
       app_port: 80
       ssl: true
       response_timeout: 120
