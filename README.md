@@ -35,7 +35,7 @@ and enable its desktop-app integration or sign in to your account.
 
 The `kamal secrets fetch` command in **`.kamal/secrets`** selects account
 `my.1password.com` and vault/item **`hubcap/deployment`**. Create the item with
-these six concealed fields, using the names exactly:
+these five concealed fields, using the names exactly:
 
 | Field | Value |
 |---|---|
@@ -43,12 +43,13 @@ these six concealed fields, using the names exactly:
 | `SIGNOZ_TOKENIZER_JWT_SECRET` | SigNoz JWT signing secret |
 | `SECRET_KEY` | GlitchTip's Django signing secret |
 | `POSTGRES_PASSWORD` | GlitchTip PostgreSQL password |
-| `DATABASE_URL` | `postgres://glitchtip:<POSTGRES_PASSWORD>@glitchtip-db:5432/glitchtip` |
 | `GLITCHTIP_EMAIL_URL` | SMTP URL, or `consolemail://` for email written to container logs |
 
-In `DATABASE_URL`, replace `<POSTGRES_PASSWORD>` with the same password stored
-in `POSTGRES_PASSWORD`, percent-encoding URL-special characters. Its user and
-database name must match the PostgreSQL accessory's `env.clear` settings.
+`.kamal/secrets` generates `DATABASE_URL` from `POSTGRES_PASSWORD`, percent-encoding
+URL-special characters. No `DATABASE_URL` field is needed in 1Password. The URL's
+user and database name must match the PostgreSQL accessory's `env.clear` settings.
+Changing the secret does not rotate the password inside an existing PostgreSQL
+database; update the database role as well when rotating it.
 
 For the existing deployment, copy the current values from the gitignored
 `.kamal/secrets.local` migration copy. Remove that copy after importing and
