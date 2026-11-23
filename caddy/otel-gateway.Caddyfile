@@ -1,0 +1,10 @@
+# TLS-terminated OTLP ingestion gateway. kamal-proxy terminates TLS for
+# OTEL_DOMAIN on port 443 and proxies to this container on the kamal network;
+# Caddy forwards OTLP/HTTP to the SigNoz collector's plain-HTTP port 4318.
+# Rails apps and FluentBit send HTTPS traffic here on port 443.
+:80 {
+	handle /healthz {
+		respond 200
+	}
+	reverse_proxy signoz-otel-collector:4318
+}
