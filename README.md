@@ -126,6 +126,13 @@ ruby -rkamal -e '
 ' -- up -d
 ```
 
+    ## Dashboards as code
+
+Keep exported dashboard JSON in `signoz/dashboards/` and preview or apply it with
+`bin/signoz_dashboards [--apply]`. See the
+[dashboard workflow](signoz/dashboards/README.md) for ownership tags, API key setup,
+safe updates, and offline tests.
+
 ## Adding a Rails App
 
 ### 1. OpenTelemetry — APM → SigNoz

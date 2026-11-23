@@ -1,0 +1,182 @@
+#!/usr/bin/env ruby
+
+require "json"
+require "net/http"
+require "open3"
+
+class SignozDashboards
+  Error = Class.new(StandardError)
+  OWNERSHIP_TAG = /\Ahubcap:[a-z0-9][a-z0-9_-]*\z/
+  DASHBOARD_ID = /\A[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\z/i
+
+  def self.read_secret(field)
+    value, _stderr, status = Open3.capture3(
+      "op", "read", "--account", "my.1password.com", "--no-newline",
+      "op://hubcap/deployment/#{field}"
+    )
+    unless status.success?
+      raise Error, "1Password read failed; sign in to my.1password.com and check hubcap/deployment/#{field}"
+    end
+    value
+  rescue Errno::ENOENT
+    raise Error, "Install the 1Password CLI (op) before running this command"
+  end
+
+  def initialize(url:, api_key:)
+    @endpoint = URI.parse(url)
+    unless @endpoint.is_a?(URI::HTTPS) && @endpoint.host && !@endpoint.userinfo && !@endpoint.query && !@endpoint.fragment
+      raise Error, "SIGNOZ_URL must be HTTPS without credentials, a query, or a fragment"
+    end
+    if api_key.strip.empty? || api_key.match?(/[\r\n]/)
+      raise Error, "SIGNOZ_SERVICE_ACCOUNT_API_KEY must be nonempty and contain no newlines"
+    end
+
+    @endpoint.path = "#{@endpoint.path.delete_suffix("/")}/api/v1/dashboards"
+    @api_key = api_key
+  rescue URI::InvalidURIError
+    raise Error, "SIGNOZ_URL is not a valid HTTPS URL"
+  end
+
+  def plan(directory)
+    paths = Dir.glob(File.join(directory, "*.json")).sort
+    raise Error, "No dashboard JSON files found in #{directory}; export a dashboard first" if paths.empty?
+
+    desired = {}
+    paths.each do |path|
+      begin
+        data = JSON.parse(File.read(path))
+      rescue JSON::ParserError
+        raise Error, "#{path}: invalid JSON"
+      end
+
+      # shortcut: validates structure, not individual queries; use exports until full schema validation is needed.
+      valid = data.is_a?(Hash) && data["version"] == "v5" &&
+        data["title"].is_a?(String) && !data["title"].strip.empty? &&
+        data["tags"].is_a?(Array) && data["tags"].all? { |tag| tag.is_a?(String) } &&
+        data["widgets"].is_a?(Array) && data["layout"].is_a?(Array) &&
+        data["variables"].is_a?(Hash)
+      unless valid
+        raise Error, "#{path}: expected v5 dashboard data with title, tags, widgets, layout, and variables, not an API response wrapper"
+      end
+
+      tags = data["tags"].grep(/\Ahubcap:/)
+      unless tags.length == 1 && OWNERSHIP_TAG.match?(tags.first)
+        raise Error, "#{path}: add exactly one ownership tag, for example hubcap:rails-overview"
+      end
+      tag = tags.first
+      raise Error, "Duplicate local ownership tag: #{tag}" if desired.key?(tag)
+
+      desired[tag] = {name: File.basename(path, ".json"), data: data}
+    end
+
+    existing = request(Net::HTTP::Get) do |dashboards|
+      valid = dashboards.is_a?(Array) && dashboards.all? do |dashboard|
+        dashboard.is_a?(Hash) && dashboard["id"].is_a?(String) &&
+          DASHBOARD_ID.match?(dashboard["id"]) && dashboard["data"].is_a?(Hash) &&
+          (dashboard["data"]["tags"].nil? ||
+            (dashboard["data"]["tags"].is_a?(Array) &&
+              dashboard["data"]["tags"].all? { |tag| tag.is_a?(String) }))
+      end
+      raise Error, "Unexpected dashboard list; check the SigNoz URL and API version" unless valid
+    end
+
+    desired.map do |tag, definition|
+      matches = existing.select { |dashboard| (dashboard["data"]["tags"] || []).include?(tag) }
+      raise Error, "Multiple remote dashboards have ownership tag #{tag}; resolve duplicates first" if matches.length > 1
+
+      current = matches.first
+      action = if current.nil?
+        "CREATE"
+      elsif current["data"] == definition[:data]
+        "UNCHANGED"
+      else
+        "UPDATE"
+      end
+      if action == "UPDATE" && current["locked"]
+        raise Error, "#{definition[:name]} is locked; unlock it explicitly before applying changes"
+      end
+
+      definition.merge(action: action, id: current && current["id"])
+    end
+  end
+
+  def apply(plan)
+    # shortcut: assumes one apply at a time; add a deployment lock before allowing concurrent runs.
+    plan.each do |change|
+      case change[:action]
+      when "CREATE"
+        request(Net::HTTP::Post, body: change[:data])
+      when "UPDATE"
+        request(Net::HTTP::Put, id: change[:id], body: change[:data])
+      end
+    end
+  end
+
+  private
+
+  def request(type, id: nil, body: nil)
+    uri = @endpoint.dup
+    uri.path += "/#{id}" if id
+    http_request = type.new(uri)
+    http_request["SIGNOZ-API-KEY"] = @api_key
+    http_request["Accept"] = "application/json"
+    if body
+      http_request["Content-Type"] = "application/json"
+      http_request.body = JSON.generate(body)
+    end
+
+    response = Net::HTTP.start(uri.host, uri.port, use_ssl: true,
+      open_timeout: 10, read_timeout: 30, write_timeout: 30, max_retries: 0) do |http|
+      http.request(http_request)
+    end
+    response_body = response.body || ""
+    unless response.is_a?(Net::HTTPSuccess)
+      raise Error, "HTTP request failed; check credentials, permissions, and API version"
+    end
+
+    payload = JSON.parse(response_body)
+    unless payload.is_a?(Hash) && payload["status"] == "success" && payload.key?("data")
+      raise Error, "Unexpected SigNoz response; check the SigNoz URL and API version"
+    end
+    yield payload["data"] if block_given?
+    payload["data"]
+  rescue Error, JSON::ParserError, Timeout::Error, SocketError, SystemCallError, IOError, OpenSSL::SSL::SSLError, Net::HTTPBadResponse => error
+    message = case error
+    when Error
+      error.message
+    when JSON::ParserError
+      "SigNoz returned invalid JSON; check the SigNoz URL and API version"
+    else
+      "SigNoz request failed (#{error.class}); no automatic retries were made"
+    end
+    status = response&.code || "(unavailable)"
+    response_body = "(empty)" if response_body == ""
+    redacted_body = (response_body || "(unavailable)").gsub(@api_key, "[REDACTED]")
+    raise Error, "#{http_request.method} #{uri.path}: #{message}\n" \
+      "HTTP status: #{status}\nResponse body:\n#{redacted_body}"
+  end
+end
+
+if $PROGRAM_NAME == __FILE__
+  begin
+    unless ARGV.empty? || ARGV == ["--apply"]
+      raise SignozDashboards::Error, "Usage: bin/signoz_dashboards [--apply]"
+    end
+
+    dashboards = SignozDashboards.new(
+      url: SignozDashboards.read_secret("SIGNOZ_URL"),
+      api_key: SignozDashboards.read_secret("SIGNOZ_SERVICE_ACCOUNT_API_KEY")
+    )
+    plan = dashboards.plan(File.expand_path("../signoz/dashboards", __dir__))
+    puts "Dashboard plan:"
+    plan.each { |change| puts "#{change[:action].ljust(9)} #{change[:name]}" }
+    if ARGV == ["--apply"]
+      dashboards.apply(plan)
+      puts "Apply complete."
+    else
+      puts "Preview only. Run with --apply to make these changes."
+    end
+  rescue SignozDashboards::Error, SystemCallError => error
+    abort "Error: #{error.message}"
+  end
+end

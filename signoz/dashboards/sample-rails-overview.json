@@ -1,0 +1,138 @@
+{
+  "title": "Sample: Rails HTTP overview",
+  "description": "HTTP request rate and p95 latency from ingested server spans. The service variable defaults to sykpatientsv2. Results reflect received traces, so sampling affects the data.",
+  "tags": ["hubcap:sample-rails-overview"],
+  "version": "v5",
+  "uploadedGrafana": false,
+  "panelMap": {},
+  "variables": {
+    "6fb98b0c-4c96-4c16-9776-d29574c1ab05": {
+      "id": "6fb98b0c-4c96-4c16-9776-d29574c1ab05",
+      "name": "service",
+      "description": "OpenTelemetry service.name of the Rails application",
+      "type": "TEXTBOX",
+      "textboxValue": "sykpatientsv2",
+      "defaultValue": "sykpatientsv2",
+      "order": 0,
+      "sort": "DISABLED",
+      "multiSelect": false,
+      "showALLOption": false
+    }
+  },
+  "layout": [
+    {
+      "i": "6fb98b0c-4c96-4c16-9776-d29574c1ab01",
+      "x": 0,
+      "y": 0,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    },
+    {
+      "i": "6fb98b0c-4c96-4c16-9776-d29574c1ab02",
+      "x": 6,
+      "y": 0,
+      "w": 6,
+      "h": 6,
+      "moved": false,
+      "static": false
+    }
+  ],
+  "widgets": [
+    {
+      "id": "6fb98b0c-4c96-4c16-9776-d29574c1ab01",
+      "title": "HTTP request rate",
+      "description": "Received server spans per second, aggregated into 60-second intervals. Not extrapolated for trace sampling.",
+      "panelTypes": "graph",
+      "timePreferance": "GLOBAL_TIME",
+      "yAxisUnit": "reqps",
+      "opacity": "1",
+      "nullZeroValues": "zero",
+      "stackedBarChart": false,
+      "thresholds": [],
+      "softMin": 0,
+      "softMax": null,
+      "fillSpans": false,
+      "columnUnits": {},
+      "selectedLogFields": null,
+      "selectedTracesFields": null,
+      "query": {
+        "id": "6fb98b0c-4c96-4c16-9776-d29574c1ab03",
+        "queryType": "builder",
+        "promql": [],
+        "clickhouse_sql": [],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "traces",
+              "expression": "A",
+              "disabled": false,
+              "aggregations": [{"expression": "rate()"}],
+              "filter": {
+                "expression": "serviceName = $service AND spanKind = 'Server'"
+              },
+              "groupBy": [],
+              "functions": [],
+              "having": {"expression": ""},
+              "orderBy": [],
+              "limit": null,
+              "stepInterval": 60,
+              "legend": "Requests/sec"
+            }
+          ],
+          "queryFormulas": [],
+          "queryTraceOperator": []
+        }
+      }
+    },
+    {
+      "id": "6fb98b0c-4c96-4c16-9776-d29574c1ab02",
+      "title": "HTTP latency (p95)",
+      "description": "95th percentile of received server-span durations, aggregated into 60-second intervals.",
+      "panelTypes": "graph",
+      "timePreferance": "GLOBAL_TIME",
+      "yAxisUnit": "ns",
+      "opacity": "1",
+      "nullZeroValues": "zero",
+      "stackedBarChart": false,
+      "thresholds": [],
+      "softMin": 0,
+      "softMax": null,
+      "fillSpans": false,
+      "columnUnits": {},
+      "selectedLogFields": null,
+      "selectedTracesFields": null,
+      "query": {
+        "id": "6fb98b0c-4c96-4c16-9776-d29574c1ab04",
+        "queryType": "builder",
+        "promql": [],
+        "clickhouse_sql": [],
+        "builder": {
+          "queryData": [
+            {
+              "queryName": "A",
+              "dataSource": "traces",
+              "expression": "A",
+              "disabled": false,
+              "aggregations": [{"expression": "p95(durationNano)"}],
+              "filter": {
+                "expression": "serviceName = $service AND spanKind = 'Server'"
+              },
+              "groupBy": [],
+              "functions": [],
+              "having": {"expression": ""},
+              "orderBy": [],
+              "limit": null,
+              "stepInterval": 60,
+              "legend": "p95 latency"
+            }
+          ],
+          "queryFormulas": [],
+          "queryTraceOperator": []
+        }
+      }
+    }
+  ]
+}
