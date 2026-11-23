@@ -41,13 +41,14 @@ these five concealed fields, using the names exactly:
 |---|---|
 | `KAMAL_REGISTRY_PASSWORD` | Docker Hub access token |
 | `SIGNOZ_TOKENIZER_JWT_SECRET` | SigNoz JWT signing secret |
-| `SECRET_KEY` | GlitchTip's Django signing secret |
-| `POSTGRES_PASSWORD` | GlitchTip PostgreSQL password |
+| `GLITCHTIP_SECRET_KEY` | GlitchTip's Django signing secret |
+| `GLITCHTIP_POSTGRES_PASSWORD` | GlitchTip PostgreSQL password |
 | `GLITCHTIP_EMAIL_URL` | SMTP URL, or `consolemail://` for email written to container logs |
 
-`.kamal/secrets` generates `DATABASE_URL` from `POSTGRES_PASSWORD`, percent-encoding
-URL-special characters. No `DATABASE_URL` field is needed in 1Password. The URL's
-user and database name must match the PostgreSQL accessory's `env.clear` settings.
+`.kamal/secrets` generates `GLITCHTIP_DATABASE_URL` from
+`GLITCHTIP_POSTGRES_PASSWORD`. No `GLITCHTIP_DATABASE_URL` field is needed in
+1Password. The URL's user and database name must match the PostgreSQL accessory's
+`env.clear` settings.
 Changing the secret does not rotate the password inside an existing PostgreSQL
 database; update the database role as well when rotating it.
 
@@ -57,8 +58,10 @@ verifying the secrets. For a fresh deployment, `openssl rand -hex 32` generates
 a suitable signing secret or database password.
 
 The Git-safe `.kamal/secrets` uses Kamal's native `secrets fetch` and
-`secrets extract` commands. Email credentials are injected as `EMAIL_URL` for
-both GlitchTip web and worker containers.
+`secrets extract` commands. GlitchTip containers receive `GLITCHTIP_SECRET_KEY`
+as `SECRET_KEY` and `GLITCHTIP_DATABASE_URL` as `DATABASE_URL`. PostgreSQL receives
+`GLITCHTIP_POSTGRES_PASSWORD` as `POSTGRES_PASSWORD`. Email credentials are
+injected as `EMAIL_URL` for both GlitchTip web and worker containers.
 
 All accessory `proxy.host` domains must have DNS A records pointing at `x-server`
 before first boot — kamal-proxy provisions Let's Encrypt certificates automatically.
@@ -113,9 +116,12 @@ and the same secret names as Kamal. To run it with secrets fetched from
 ```bash
 ruby -rkamal -e '
   config = Kamal::Configuration.create_from(config_file: Pathname.new("config/deploy.yml"))
-  %w[SIGNOZ_TOKENIZER_JWT_SECRET SECRET_KEY POSTGRES_PASSWORD DATABASE_URL GLITCHTIP_EMAIL_URL].each do |key|
+  %w[SIGNOZ_TOKENIZER_JWT_SECRET GLITCHTIP_SECRET_KEY GLITCHTIP_POSTGRES_PASSWORD GLITCHTIP_DATABASE_URL GLITCHTIP_EMAIL_URL].each do |key|
     ENV[key] = config.secrets[key]
   end
+  ENV["SECRET_KEY"] = ENV["GLITCHTIP_SECRET_KEY"]
+  ENV["POSTGRES_PASSWORD"] = ENV["GLITCHTIP_POSTGRES_PASSWORD"]
+  ENV["DATABASE_URL"] = ENV["GLITCHTIP_DATABASE_URL"]
   exec("docker", "compose", *ARGV)
 ' -- up -d
 ```
