@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<clickhouse>
+    <!-- Override the image-generated users.d/default-user.xml, which locks
+         the default user to loopback only. We allow all networks here so that
+         other containers on the Docker bridge (otel-collector, migrator, etc.)
+         can connect. Access is still restricted to the internal hubcap network
+         via Docker Compose — this port is never exposed publicly. -->
+    <users>
+        <default>
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+        </default>
+    </users>
+</clickhouse>
